@@ -2,25 +2,180 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Laboratório de Partes</title>
     <link rel="icon" href="data:," />
     <style>
+      :root {
+        --rosa: #ff4fb0;
+        --rosa-claro: #ffd6ef;
+        --escuro: #140a12;
+        --painel: #1f1320;
+        --borda: #3a2238;
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
         margin: 0;
         padding: 24px;
-        background: #140a12;
-        color: #ffd6ef;
-        font: 14px/1.5 system-ui, sans-serif;
+        background: var(--escuro);
+        color: var(--rosa-claro);
+        font: 14px/1.5 system-ui, -apple-system, sans-serif;
       }
       h1 {
-        font-size: 18px;
-        color: #ff4fb0;
+        margin: 0 0 4px;
+        font-size: 20px;
+        color: var(--rosa);
+      }
+      h2 {
+        margin: 32px 0 12px;
+        font-size: 15px;
+        color: var(--rosa);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .aviso {
+        margin: 0 0 24px;
+        opacity: 0.6;
+        font-size: 13px;
+      }
+      .erros {
+        margin: 0 0 24px;
+        padding: 12px 16px;
+        border: 1px solid #ff5c5c;
+        border-radius: 8px;
+        background: #2a1216;
+        color: #ffb3b3;
+        white-space: pre-wrap;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      .topo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: flex-start;
+      }
+      .palco {
+        flex: 0 0 auto;
+        padding: 16px;
+        border: 1px solid var(--borda);
+        border-radius: 12px;
+        background: var(--painel);
+        background-image: linear-gradient(45deg, #241626 25%, transparent 25%),
+          linear-gradient(-45deg, #241626 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #241626 75%),
+          linear-gradient(-45deg, transparent 75%, #241626 75%);
+        background-size: 16px 16px;
+        background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      }
+      .palco canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .controles {
+        flex: 1 1 360px;
+        min-width: 320px;
+      }
+      .linha {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .linha > span {
+        opacity: 0.7;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .seletor {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .seletor .valor {
+        flex: 1;
+        padding: 4px 8px;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        background: #170e18;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      button {
+        padding: 4px 10px;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        background: #2a1a2b;
+        color: var(--rosa-claro);
+        font: inherit;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--rosa);
+        color: #fff;
+      }
+      .acoes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 16px 0 0;
+      }
+      .acoes button {
+        padding: 8px 14px;
+      }
+      .amostra {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 1px solid var(--borda);
+        border-radius: 3px;
+        vertical-align: -2px;
+      }
+      .grade {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 12px;
+      }
+      .item {
+        padding: 8px;
+        border: 1px solid var(--borda);
+        border-radius: 8px;
+        background: var(--painel);
+        text-align: center;
+      }
+      .item canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        image-rendering: pixelated;
+      }
+      .item .rotulo {
+        margin-top: 6px;
+        font-size: 11px;
+        font-family: ui-monospace, monospace;
+        opacity: 0.75;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+      }
+      .json {
+        margin: 0;
+        padding: 12px;
+        border: 1px solid var(--borda);
+        border-radius: 8px;
+        background: var(--painel);
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        overflow-x: auto;
       }
     </style>
   </head>
   <body>
     <h1>Laboratório de Partes</h1>
-    <p>Etapa 1. Esta página não entra no OBS.</p>
+    <p class="aviso">Página de desenvolvimento. Não entra no OBS.</p>
     <div id="laboratorio"></div>
     <script type="module" src="/src/lab/main.ts"></script>
   </body>
