@@ -65,8 +65,8 @@ export interface Parte {
 export type TipoParteHumanoide =
   | 'pernas'
   | 'peito'
-  | 'roupa'
   | 'bracos'
+  | 'roupa'
   | 'cabeca'
   | 'olhos'
   | 'boca'
@@ -79,8 +79,9 @@ export type TipoParteCriatura = 'corpo' | 'acessorio'
 export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
   pernas: { x: 15, y: 35, largura: 18, altura: 13 },
   peito: { x: 15, y: 23, largura: 18, altura: 14 },
-  roupa: { x: 13, y: 23, largura: 22, altura: 24 },
+  // braços antes da roupa: é o que deixa a manga curta aparecer por cima
   bracos: { x: 8, y: 23, largura: 32, altura: 18 },
+  roupa: { x: 11, y: 23, largura: 26, altura: 24 },
   cabeca: { x: 14, y: 3, largura: 20, altura: 21 },
   olhos: { x: 17, y: 12, largura: 14, altura: 7 },
   boca: { x: 19, y: 18, largura: 10, altura: 4 },
