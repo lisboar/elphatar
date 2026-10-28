@@ -82,7 +82,7 @@ export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
   roupa: { x: 13, y: 23, largura: 22, altura: 24 },
   bracos: { x: 8, y: 23, largura: 32, altura: 18 },
   cabeca: { x: 14, y: 3, largura: 20, altura: 21 },
-  olhos: { x: 17, y: 13, largura: 14, altura: 7 },
+  olhos: { x: 17, y: 12, largura: 14, altura: 7 },
   boca: { x: 19, y: 18, largura: 10, altura: 4 },
   cabelo: { x: 11, y: 0, largura: 26, altura: 34 },
   acessorio: { x: 4, y: 0, largura: 40, altura: 34 },
