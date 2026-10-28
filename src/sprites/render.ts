@@ -108,19 +108,12 @@ export function desenharSkin(
   // Object.entries segue a ordem de declaração do molde: de trás pra frente.
   // Antes disso vêm as partes marcadas `atras`, que não podem cobrir o corpo.
   const camadas: { parte: Parte; caixa: Caixa; tipo: string }[] = []
-  let ancora = { x: 0, y: 0 }
-
-  let aceitaAcessorio = true
 
   for (const [tipo, caixa] of Object.entries(molde)) {
     const lista = partes[tipo as keyof typeof partes] as readonly Parte[]
     const indice = skin.partes[tipo as keyof typeof skin.partes] ?? 0
     const parte = lista[indice % lista.length]
     if (!parte) continue
-
-    if (parte.ancoraAcessorio) ancora = parte.ancoraAcessorio
-    if (parte.semAcessorio) aceitaAcessorio = false
-    if (tipo === 'acessorio' && !aceitaAcessorio) continue
 
     const camada = { parte, caixa, tipo }
     if (parte.atras) camadas.unshift(camada)
@@ -135,13 +128,8 @@ export function desenharSkin(
   }
 
   for (const { parte, caixa, tipo } of camadas) {
-    // O acessório desce junto com a criatura, que é mais baixa que o humanoide.
-    const posicao =
-      tipo === 'acessorio' && (ancora.x !== 0 || ancora.y !== 0)
-        ? { ...caixa, x: caixa.x + ancora.x, y: caixa.y + ancora.y }
-        : caixa
     const matriz = vista === 'lado' ? parte.lado : parte.frente
-    desenharMatriz(ctx, matriz, posicao, coresDaParte(parte, skin, tipo), escala)
+    desenharMatriz(ctx, matriz, caixa, coresDaParte(parte, skin, tipo), escala)
   }
 }
 

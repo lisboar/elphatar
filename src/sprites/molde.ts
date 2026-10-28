@@ -27,7 +27,7 @@ export const ESCALA = 3
 export type Matriz = readonly string[]
 
 /** De qual cor da skin a parte se pinta, quando não tem cor fixa. */
-export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos'
+export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos' | 'criatura'
 
 export interface Caixa {
   readonly x: number
@@ -73,7 +73,7 @@ export type TipoParteHumanoide =
   | 'cabelo'
   | 'acessorio'
 
-export type TipoParteCriatura = 'corpo' | 'acessorio'
+export type TipoParteCriatura = 'corpo'
 
 /** Caixas do humanoide. A ordem das chaves é a ordem de desenho (de trás pra frente). */
 export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
@@ -92,7 +92,6 @@ export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
 /** Caixas da criatura. Cada criatura é um desenho só, com olhos e cores próprios. */
 export const moldeCriatura: Record<TipoParteCriatura, Caixa> = {
   corpo: { x: 4, y: 4, largura: 40, altura: 44 },
-  acessorio: moldeHumanoide.acessorio,
 }
 
 /** Qual slot de cor cada tipo de parte usa, quando a parte não tem cor fixa. */
@@ -106,7 +105,7 @@ export const slotDaParte: Record<TipoParteHumanoide | TipoParteCriatura, Slot> =
   olhos: 'olhos',
   cabelo: 'cabelo',
   acessorio: 'pele',
-  corpo: 'pele',
+  corpo: 'criatura',
 }
 
 /** Matriz vazia do tamanho de uma caixa. Para a opção "nenhum". */

@@ -23,6 +23,16 @@ export const paletas: Record<Slot, readonly { nome: string; hex: string }[]> = {
     { nome: 'verde', hex: '#3fa85f' },
     { nome: 'rosa', hex: '#ff4fb0' },
   ],
+  criatura: [
+    { nome: 'cinza', hex: '#8e8a96' },
+    { nome: 'caramelo', hex: '#b07a46' },
+    { nome: 'branco', hex: '#e6e0ea' },
+    { nome: 'preto', hex: '#4a4350' },
+    { nome: 'rosa', hex: '#ff79c0' },
+    { nome: 'verde', hex: '#6fc46a' },
+    { nome: 'azul', hex: '#5f93d8' },
+    { nome: 'amarelo', hex: '#e8c23f' },
+  ],
   roupa: [
     { nome: 'rosa', hex: '#ff4fb0' },
     { nome: 'roxo', hex: '#7b3fd4' },

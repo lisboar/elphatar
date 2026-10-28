@@ -55,7 +55,7 @@ function sorteador(semente: number): () => number {
   }
 }
 
-const SLOTS: Slot[] = ['pele', 'cabelo', 'roupa', 'olhos']
+const SLOTS: Slot[] = ['pele', 'cabelo', 'roupa', 'olhos', 'criatura']
 
 function montar(tipo: TipoCorpo, sortear: () => number): Skin {
   const indice = (n: number) => Math.floor(sortear() * n)
@@ -95,7 +95,9 @@ export function skinDeSemente(texto: string, tipo?: TipoCorpo): Skin {
 /** Troca uma parte ou uma cor, devolvendo uma skin nova. */
 export function comParte(skin: Skin, tipo: string, indice: number): Skin {
   if (!(tipo in skin.partes)) return skin
-  const lista = catalogo[skin.tipo][tipo as keyof (typeof catalogo)[typeof skin.tipo]]
+  const listas = catalogo[skin.tipo] as Record<string, readonly unknown[]>
+  const lista = listas[tipo]
+  if (!lista) return skin
   const n = ((indice % lista.length) + lista.length) % lista.length
   return { ...skin, partes: { ...skin.partes, [tipo]: n } } as Skin
 }
