@@ -15,7 +15,7 @@ export const catalogo = {
 
 export type TipoCorpo = keyof typeof catalogo
 
-const CARACTERES = new Set(['.', 'k', 'w', '1', '2', '3'])
+const CARACTERES = new Set(['.', 'k', 'w', 's', '1', '2', '3', 'a', 'b', 'c', 'd', 'e', 'f'])
 
 function conferir(
   erros: string[],
@@ -37,21 +37,27 @@ function conferir(
 }
 
 /**
- * Confere que toda matriz cabe exatamente na caixa do seu tipo de parte.
- * É isso que garante que qualquer combinação se encaixe. Chamado no
- * Laboratório e no overlay com ?debug=1.
+ * Confere que toda matriz, nas duas vistas, cabe exatamente na caixa do seu
+ * tipo de parte. É isso que garante que qualquer combinação se encaixe.
+ * Chamado no Laboratório e no overlay com ?debug=1.
  */
 export function validarCatalogo(): string[] {
   const erros: string[] = []
 
   for (const [tipo, partes] of Object.entries(catalogo.humanoide)) {
     const caixa = moldeHumanoide[tipo as keyof typeof moldeHumanoide]
-    partes.forEach((p: Parte) => conferir(erros, `humanoide/${tipo}/${p.nome}`, caixa, p.matriz))
+    partes.forEach((p: Parte) => {
+      conferir(erros, `humanoide/${tipo}/${p.nome}/frente`, caixa, p.frente)
+      conferir(erros, `humanoide/${tipo}/${p.nome}/lado`, caixa, p.lado)
+    })
   }
 
   for (const [tipo, partes] of Object.entries(catalogo.criatura)) {
     const caixa = moldeCriatura[tipo as keyof typeof moldeCriatura]
-    partes.forEach((p: Parte) => conferir(erros, `criatura/${tipo}/${p.nome}`, caixa, p.matriz))
+    partes.forEach((p: Parte) => {
+      conferir(erros, `criatura/${tipo}/${p.nome}/frente`, caixa, p.frente)
+      conferir(erros, `criatura/${tipo}/${p.nome}/lado`, caixa, p.lado)
+    })
   }
 
   return erros

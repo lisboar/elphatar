@@ -4,30 +4,30 @@
  * Cada tipo de parte tem uma caixa com posição e tamanho definidos aqui.
  * Uma matriz de parte precisa ter exatamente o tamanho da sua caixa — é isso
  * que garante que qualquer combinação de partes se encaixe sem ajuste manual.
+ *
+ * Cada parte tem duas matrizes: `frente` e `lado`. O lado esquerdo não é
+ * desenhado: é o `lado` espelhado na hora de rasterizar.
  */
 
 /** Lado da grade em pixels de arte. */
-export const GRADE = 32
+export const GRADE = 48
 
-/** Escala de desenho na tela: 32 x 4 = 128 px de altura. */
-export const ESCALA = 4
+/** Escala de desenho na tela: 48 x 3 = 144 px de altura. */
+export const ESCALA = 3
 
 /**
  * Caracteres aceitos nas matrizes:
  * - `.` vazio (transparente)
  * - `k` contorno (cor fixa, igual em todas as partes)
- * - `w` branco (brilho do olho, dente)
- * - `1` cor base do slot da parte
- * - `2` sombra do slot
- * - `3` luz do slot
+ * - `w` branco, `s` cinza do branco (dente, olho, osso)
+ * - `1` `2` `3` base, sombra e luz da cor principal da parte
+ * - `a` `b` `c` base, sombra e luz da cor extra 1 da parte
+ * - `d` `e` `f` base, sombra e luz da cor extra 2 da parte
  */
-export type Caractere = '.' | 'k' | 'w' | '1' | '2' | '3'
-
-/** Uma matriz é uma lista de linhas de texto, uma linha por pixel de altura. */
 export type Matriz = readonly string[]
 
-/** De qual cor da skin a parte se pinta. */
-export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos' | 'acessorio' | 'corpo'
+/** De qual cor da skin a parte se pinta, quando não tem cor fixa. */
+export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos'
 
 export interface Caixa {
   readonly x: number
@@ -36,15 +36,29 @@ export interface Caixa {
   readonly altura: number
 }
 
+export type Vista = 'frente' | 'lado'
+
 export interface Parte {
   /** Nome curto, usado no Laboratório e nos comandos do chat. */
   readonly nome: string
-  readonly matriz: Matriz
+  readonly frente: Matriz
+  readonly lado: Matriz
   /**
    * Desenha atrás de todas as outras partes. Para acessórios que nascem do
    * corpo (asas, cauda) e não podem cobrir o contorno dele.
    */
   readonly atras?: boolean
+  /** Cor base fixa: a parte ignora o slot. Acessórios e criaturas usam isso. */
+  readonly fixa?: string
+  /** Cor dos caracteres `a` `b` `c`. */
+  readonly extra1?: string
+  /** Cor dos caracteres `d` `e` `f`. */
+  readonly extra2?: string
+  /**
+   * Só para corpos de criatura: onde fica o topo da cabeça dela, para o
+   * acessório pousar no lugar certo em bicho alto e em bicho baixo.
+   */
+  readonly ancoraAcessorio?: { readonly x: number; readonly y: number }
 }
 
 export type TipoParteHumanoide =
@@ -54,42 +68,43 @@ export type TipoParteHumanoide =
   | 'bracos'
   | 'cabeca'
   | 'olhos'
+  | 'boca'
   | 'cabelo'
   | 'acessorio'
 
-export type TipoParteCriatura = 'corpo' | 'olhos' | 'acessorio'
+export type TipoParteCriatura = 'corpo' | 'acessorio'
 
 /** Caixas do humanoide. A ordem das chaves é a ordem de desenho (de trás pra frente). */
 export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
-  pernas: { x: 11, y: 24, largura: 10, altura: 8 },
-  peito: { x: 11, y: 16, largura: 10, altura: 9 },
-  roupa: { x: 11, y: 16, largura: 10, altura: 12 },
-  bracos: { x: 7, y: 16, largura: 18, altura: 11 },
-  cabeca: { x: 10, y: 4, largura: 12, altura: 12 },
-  olhos: { x: 11, y: 10, largura: 10, altura: 4 },
-  cabelo: { x: 7, y: 1, largura: 18, altura: 13 },
-  acessorio: { x: 4, y: 0, largura: 24, altura: 22 },
+  pernas: { x: 15, y: 35, largura: 18, altura: 13 },
+  peito: { x: 15, y: 23, largura: 18, altura: 14 },
+  roupa: { x: 14, y: 23, largura: 20, altura: 20 },
+  bracos: { x: 8, y: 23, largura: 32, altura: 18 },
+  cabeca: { x: 14, y: 3, largura: 20, altura: 21 },
+  olhos: { x: 17, y: 13, largura: 14, altura: 7 },
+  boca: { x: 19, y: 18, largura: 10, altura: 4 },
+  cabelo: { x: 11, y: 0, largura: 26, altura: 34 },
+  acessorio: { x: 4, y: 0, largura: 40, altura: 34 },
 }
 
-/** Caixas da criatura. Mesma grade, mesmo acessório. */
+/** Caixas da criatura. Cada criatura é um desenho só, com olhos e cores próprios. */
 export const moldeCriatura: Record<TipoParteCriatura, Caixa> = {
-  corpo: { x: 6, y: 7, largura: 20, altura: 25 },
-  olhos: { x: 10, y: 16, largura: 12, altura: 5 },
-  // A criatura é mais baixa que o humanoide: o acessório desce com ela.
-  acessorio: { x: 4, y: 6, largura: 24, altura: 22 },
+  corpo: { x: 4, y: 4, largura: 40, altura: 44 },
+  acessorio: moldeHumanoide.acessorio,
 }
 
-/** Qual slot de cor cada tipo de parte usa. */
+/** Qual slot de cor cada tipo de parte usa, quando a parte não tem cor fixa. */
 export const slotDaParte: Record<TipoParteHumanoide | TipoParteCriatura, Slot> = {
   pernas: 'pele',
   peito: 'pele',
   cabeca: 'pele',
-  roupa: 'roupa',
   bracos: 'pele',
+  boca: 'pele',
+  roupa: 'roupa',
   olhos: 'olhos',
   cabelo: 'cabelo',
-  acessorio: 'acessorio',
-  corpo: 'corpo',
+  acessorio: 'pele',
+  corpo: 'pele',
 }
 
 /** Matriz vazia do tamanho de uma caixa. Para a opção "nenhum". */

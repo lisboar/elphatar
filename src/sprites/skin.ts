@@ -55,7 +55,7 @@ function sorteador(semente: number): () => number {
   }
 }
 
-const SLOTS: Slot[] = ['pele', 'cabelo', 'roupa', 'olhos', 'acessorio', 'corpo']
+const SLOTS: Slot[] = ['pele', 'cabelo', 'roupa', 'olhos']
 
 function montar(tipo: TipoCorpo, sortear: () => number): Skin {
   const indice = (n: number) => Math.floor(sortear() * n)
@@ -80,7 +80,7 @@ function montar(tipo: TipoCorpo, sortear: () => number): Skin {
 /** Skin aleatória. Sem semente, muda a cada chamada. */
 export function skinAleatoria(tipo?: TipoCorpo): Skin {
   const sortear = sorteador((Math.random() * 2 ** 32) >>> 0)
-  return montar(tipo ?? (sortear() < 0.8 ? 'humanoide' : 'criatura'), sortear)
+  return montar(tipo ?? (sortear() < 0.75 ? 'humanoide' : 'criatura'), sortear)
 }
 
 /**
@@ -89,7 +89,7 @@ export function skinAleatoria(tipo?: TipoCorpo): Skin {
  */
 export function skinDeSemente(texto: string, tipo?: TipoCorpo): Skin {
   const sortear = sorteador(hash(texto.toLowerCase()))
-  return montar(tipo ?? (sortear() < 0.8 ? 'humanoide' : 'criatura'), sortear)
+  return montar(tipo ?? (sortear() < 0.75 ? 'humanoide' : 'criatura'), sortear)
 }
 
 /** Troca uma parte ou uma cor, devolvendo uma skin nova. */

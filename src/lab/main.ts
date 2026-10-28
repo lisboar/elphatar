@@ -1,13 +1,8 @@
 import { catalogo, validarCatalogo, type TipoCorpo } from '../sprites/catalogo'
-import { GRADE, slotDaParte, type Slot } from '../sprites/molde'
+import { GRADE, slotDaParte, type Slot, type Vista } from '../sprites/molde'
 import { paletas } from '../sprites/paletas'
-import { desenharParte, desenharSkin } from '../sprites/render'
-import {
-  comCor,
-  comParte,
-  skinAleatoria,
-  type Skin,
-} from '../sprites/skin'
+import { desenharParte, desenharSkin, spriteDaSkin } from '../sprites/render'
+import { comCor, comParte, skinAleatoria, type Skin } from '../sprites/skin'
 
 /**
  * Laboratório: combina as partes, mostra cada uma isolada e gera aleatórios.
@@ -45,11 +40,22 @@ function elemento<K extends keyof HTMLElementTagNameMap>(
   return el
 }
 
-/* ---------- avatar grande + controles ---------- */
+/* ---------- avatar grande nas três vistas ---------- */
 
-const palcoCanvas = canvas(12)
+const ESCALA_PALCO = 8
+const vistas: { rotulo: string; vista: Vista; espelhar: boolean }[] = [
+  { rotulo: 'frente', vista: 'frente', espelhar: false },
+  { rotulo: 'lado direito', vista: 'lado', espelhar: false },
+  { rotulo: 'lado esquerdo', vista: 'lado', espelhar: true },
+]
+
 const palco = elemento('div', 'palco')
-palco.append(palcoCanvas)
+const palcoCanvas = vistas.map(() => canvas(ESCALA_PALCO))
+vistas.forEach((v, i) => {
+  const caixa = elemento('div', 'vista')
+  caixa.append(palcoCanvas[i]!, elemento('div', 'rotulo', v.rotulo))
+  palco.append(caixa)
+})
 
 const controles = elemento('div', 'controles')
 const json = elemento('pre', 'json')
@@ -59,10 +65,8 @@ topo.append(palco, controles)
 
 const erros = validarCatalogo()
 if (erros.length > 0) {
-  const aviso = elemento('div', 'erros', `Catálogo com problema:\n${erros.join('\n')}`)
-  raiz.append(aviso)
+  raiz.append(elemento('div', 'erros', `Catálogo com problema:\n${erros.join('\n')}`))
 }
-
 raiz.append(topo)
 
 /** Seletor ◀ nome ▶ reaproveitado por partes e por cores. */
@@ -112,7 +116,6 @@ function montarControles(): void {
   controles.textContent = ''
   atualizadores.length = 0
 
-  // tipo de corpo
   const tipos: TipoCorpo[] = ['humanoide', 'criatura']
   const corpoSel = seletor(
     'corpo',
@@ -128,10 +131,10 @@ function montarControles(): void {
   controles.append(corpoSel.linha)
   atualizadores.push(corpoSel.atualizar)
 
-  // uma linha por tipo de parte
   for (const tipo of Object.keys(catalogo[skin.tipo])) {
-    const lista = catalogo[skin.tipo][tipo as keyof (typeof catalogo)[typeof skin.tipo]] as
-      readonly { nome: string }[]
+    const lista = catalogo[skin.tipo][
+      tipo as keyof (typeof catalogo)[typeof skin.tipo]
+    ] as readonly { nome: string }[]
     const s = seletor(
       tipo,
       () => {
@@ -148,10 +151,16 @@ function montarControles(): void {
     atualizadores.push(s.atualizar)
   }
 
-  // uma linha por cor em uso neste tipo de corpo
-  const slotsEmUso = new Set<Slot>(
-    Object.keys(catalogo[skin.tipo]).map((t) => slotDaParte[t as keyof typeof slotDaParte]),
-  )
+  // Só as cores que este tipo de corpo usa. Criatura e acessório têm cor fixa.
+  const slotsEmUso = new Set<Slot>()
+  for (const tipo of Object.keys(catalogo[skin.tipo])) {
+    const lista = catalogo[skin.tipo][
+      tipo as keyof (typeof catalogo)[typeof skin.tipo]
+    ] as readonly { fixa?: string }[]
+    if (lista.every((p) => p.fixa)) continue
+    slotsEmUso.add(slotDaParte[tipo as keyof typeof slotDaParte])
+  }
+
   for (const slot of slotsEmUso) {
     const paleta = paletas[slot]
     const s = seletor(
@@ -197,9 +206,17 @@ function montarControles(): void {
 }
 
 function redesenhar(): void {
-  const ctx = contexto(palcoCanvas)
-  ctx.clearRect(0, 0, palcoCanvas.width, palcoCanvas.height)
-  desenharSkin(ctx, skin, 12)
+  vistas.forEach((v, i) => {
+    const c = palcoCanvas[i]!
+    const ctx = contexto(c)
+    ctx.clearRect(0, 0, c.width, c.height)
+    // Passa pelo mesmo caminho do overlay: sprite em cache, depois drawImage.
+    ctx.drawImage(
+      spriteDaSkin(skin, v.vista, v.espelhar ? 'esquerda' : 'direita', ESCALA_PALCO),
+      0,
+      0,
+    )
+  })
   for (const a of atualizadores) a()
   json.textContent = JSON.stringify(skin, null, 2)
 }
@@ -210,18 +227,22 @@ function montarCatalogoVisual(): void {
   for (const tipoCorpo of ['humanoide', 'criatura'] as TipoCorpo[]) {
     raiz!.append(elemento('h2', undefined, `partes — ${tipoCorpo}`))
     const grade = elemento('div', 'grade')
+    const base = skinAleatoria(tipoCorpo)
 
     for (const tipo of Object.keys(catalogo[tipoCorpo])) {
-      const lista = catalogo[tipoCorpo][tipo as keyof (typeof catalogo)[typeof tipoCorpo]] as
-        readonly { nome: string }[]
-      const slot = slotDaParte[tipo as keyof typeof slotDaParte]
-      const hex = paletas[slot][0]!.hex
+      const lista = catalogo[tipoCorpo][
+        tipo as keyof (typeof catalogo)[typeof tipoCorpo]
+      ] as readonly { nome: string }[]
 
       lista.forEach((parte, i) => {
         const item = elemento('div', 'item')
-        const c = canvas(4)
-        desenharParte(contexto(c), tipoCorpo, tipo, i, hex, 4)
-        item.append(c, elemento('div', 'rotulo', `${tipo} ${i + 1}\n${parte.nome}`))
+        const par = elemento('div', 'par')
+        for (const vista of ['frente', 'lado'] as Vista[]) {
+          const c = canvas(3)
+          desenharParte(contexto(c), tipoCorpo, tipo, i, base, vista, 3)
+          par.append(c)
+        }
+        item.append(par, elemento('div', 'rotulo', `${tipo} ${i + 1}\n${parte.nome}`))
         grade.append(item)
       })
     }
@@ -236,11 +257,15 @@ const gradeAleatorios = elemento('div', 'grade')
 
 function montarAleatorios(): void {
   gradeAleatorios.textContent = ''
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < 18; i++) {
     const aleatoria = skinAleatoria()
     const item = elemento('div', 'item')
-    const c = canvas(4)
-    desenharSkin(contexto(c), aleatoria, 4)
+    const par = elemento('div', 'par')
+    for (const vista of ['frente', 'lado'] as Vista[]) {
+      const c = canvas(3)
+      desenharSkin(contexto(c), aleatoria, vista, 3)
+      par.append(c)
+    }
 
     const usar = elemento('button', undefined, 'usar')
     usar.style.marginTop = '6px'
@@ -250,7 +275,7 @@ function montarAleatorios(): void {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
 
-    item.append(c, elemento('div', 'rotulo', aleatoria.tipo), usar)
+    item.append(par, elemento('div', 'rotulo', aleatoria.tipo), usar)
     gradeAleatorios.append(item)
   }
 }

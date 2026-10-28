@@ -16,6 +16,9 @@ export const CONTORNO = '#1b0f19'
 /** Branco levemente rosado, para brilho de olho. */
 export const BRANCO = '#fdf2fa'
 
+/** Cinza do branco: sombra de dente, osso, máscara. */
+export const CINZA = '#b7a9b6'
+
 /** Para onde a sombra puxa: o roxo escuro do fundo da live. */
 const SOMBRA = '#2a1030'
 
