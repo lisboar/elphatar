@@ -8,7 +8,7 @@ import type { Slot } from './molde'
  */
 export const paletas: Record<Slot, readonly { nome: string; hex: string }[]> = {
   pele: [
-    { nome: 'clara', hex: '#f0c3a0' },
+    { nome: 'clara', hex: '#e3b088' },
     { nome: 'media', hex: '#b97f55' },
     { nome: 'escura', hex: '#6b4030' },
   ],
