@@ -127,6 +127,13 @@ export function desenharSkin(
     else camadas.push(camada)
   }
 
+  // De perfil, o braço da frente fica por cima da roupa — é o braço mais
+  // perto de quem olha. De frente é o contrário: a manga cobre o ombro.
+  if (vista === 'lado') {
+    const i = camadas.findIndex((c) => c.tipo === 'bracos')
+    if (i >= 0) camadas.push(...camadas.splice(i, 1))
+  }
+
   for (const { parte, caixa, tipo } of camadas) {
     // O acessório desce junto com a criatura, que é mais baixa que o humanoide.
     const posicao =

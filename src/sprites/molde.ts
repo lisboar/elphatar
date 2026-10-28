@@ -78,7 +78,7 @@ export type TipoParteCriatura = 'corpo' | 'acessorio'
 /** Caixas do humanoide. A ordem das chaves é a ordem de desenho (de trás pra frente). */
 export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
   pernas: { x: 15, y: 35, largura: 18, altura: 13 },
-  peito: { x: 15, y: 23, largura: 18, altura: 14 },
+  peito: { x: 11, y: 23, largura: 26, altura: 14 },
   // braços antes da roupa: é o que deixa a manga curta aparecer por cima
   bracos: { x: 8, y: 23, largura: 32, altura: 18 },
   roupa: { x: 11, y: 23, largura: 26, altura: 24 },
