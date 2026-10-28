@@ -106,6 +106,47 @@ Cada etapa termina com o "ok" do Thainã.
 - Teste de desempenho com o Valorant rodando e guia curto de instalação no OBS dela.
 - **Pronto quando:** roda na live dela sem perda de quadros perceptível.
 
+---
+
+## Onde estamos (atualizado em 28/10/2026)
+
+**Etapas 0 e 1 concluídas.** Próxima: Etapa 2.
+
+### Decisões tomadas no caminho (mudam o que está escrito acima)
+- **Molde:** 48×48 em escala 3× (144 px na tela), não 32×32. Chegamos a testar
+  64×64 e voltamos: os corpos simples ficaram melhores.
+- **Vistas:** cada parte tem duas matrizes, `frente` e `lado`. O lado esquerdo
+  é o `lado` espelhado na rasterização — não existe desenho separado.
+- **Criaturas:** são 8 e cada uma é um desenho inteiro, não um conjunto de
+  partes: gato, cachorro, capivara, galinha, fantasma, zumbi, et e boneco
+  assassino. Não têm acessório; só a cor muda.
+- **Cor da criatura:** o slot `criatura` pinta o corpo do bicho e do fantasma,
+  mas a *roupa* do zumbi e do boneco (a pele deles é fixa). O et é sempre verde.
+- **Humanoide:** 2 cabeças, 4 cabelos, 1 tronco, 2 braços, 2 pernas, 6 roupas
+  (conjunto com a parte de baixo em jeans), 2 olhos, 3 sobrancelhas, 3 bocas,
+  5 acessórios. Cores: 3 de pele, 3 de cabelo, 4 de olhos, 6 de roupa.
+- **Ordem das camadas muda por vista:** de frente a roupa cobre o braço (manga
+  curta); de perfil o braço fica por cima, porque é o braço mais perto.
+
+### Problemas que apareceram e como foram resolvidos
+- Partes viravam um bloco só, sem separar cabeça de corpo → cada camada é
+  contornada antes de ser colada nas outras.
+- Formas feitas de retângulos empilhados não liam como bicho → passaram a ser
+  desenhadas com elipses e polígonos, com contorno gerado automaticamente.
+- Olhos com contorno fechado pareciam óculos → viraram esclera, íris, pupila
+  e um cílio só em cima.
+- Blusa e calça da mesma cor pareciam macacão → a parte de baixo ganhou cor
+  própria.
+- Acessório preto encostando no contorno abria buraco na silhueta → os
+  detalhes escuros ficam afastados da borda.
+
+### O que falta saber antes da Etapa 2
+A animação de caminhada ainda não existe. O humanoide dá para animar por
+código, deslocando as camadas (perna, braço, cabeça) a cada quadro, porque
+elas são partes separadas. A criatura é um desenho só: vai precisar de um
+quadro extra de patas, ou de um deslocamento da metade de baixo da matriz.
+Isso é a primeira coisa a resolver na Etapa 2.
+
 ## Fase 2 (não começar antes da Fase 1 terminar)
 - Advanced Scene Switcher detectando, em recortes pequenos da tela:
   - o indicador de kill no centro

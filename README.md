@@ -16,7 +16,21 @@ npm run build      # build de producao em dist/
 npm run preview    # serve o dist/
 ```
 
-O `.env` precisa existir em cada PC: copie o `.env.example` e preencha.
+## Comecar no outro PC
+
+```bash
+git clone https://github.com/lisboar/elphatar.git
+cd elphatar
+npm install
+npm run dev
+```
+
+So isso. O `.env` ainda nao e necessario: nada no codigo le variavel de
+ambiente ate a Etapa 4 (Supabase). Quando for, copie o `.env.example` para
+`.env` e preencha — o `.env` e ignorado pelo Git de proposito, entao ele nao
+vem no clone e precisa ser criado em cada PC.
+
+No comeco de cada sessao: `git pull`. No fim: `git push`.
 
 ## URLs
 
