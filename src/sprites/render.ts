@@ -13,6 +13,7 @@ import { BRANCO, CINZA, CONTORNO, rampa, type Rampa } from './cores'
 import { paletas } from './paletas'
 import { catalogo } from './catalogo'
 import { chaveDaSkin, type Skin } from './skin'
+import { pose, type Deslocamento } from './animacao'
 
 /**
  * Desenho dos sprites.
@@ -69,14 +70,32 @@ function desenharMatriz(
   caixa: Caixa,
   cores: Cores,
   escala: number,
+  desl?: Deslocamento,
 ): void {
+  const dx = desl?.dx ?? 0
+  const dy = desl?.dy ?? 0
+  const meio = matriz[0] ? matriz[0].length / 2 : 0
+
   for (let y = 0; y < matriz.length; y++) {
     const linha = matriz[y]!
+    // abaixo de `alternarDe` as duas metades andam cada uma para o seu lado:
+    // é o que faz as pernas (uma parte só) alternarem a passada
+    const alterna = desl?.alternarDe !== undefined && y >= desl.alternarDe
+
     for (let x = 0; x < linha.length; x++) {
       const cor = corDoCaractere(linha[x]!, cores)
       if (!cor) continue
+
+      let ox = dx
+      let oy = dy
+      if (alterna) {
+        const esquerda = x < meio
+        ox += (esquerda ? desl!.dxEsquerda : desl!.dxDireita) ?? 0
+        oy += (esquerda ? desl!.dyEsquerda : desl!.dyDireita) ?? 0
+      }
+
       ctx.fillStyle = cor
-      ctx.fillRect((caixa.x + x) * escala, (caixa.y + y) * escala, escala, escala)
+      ctx.fillRect((caixa.x + x + ox) * escala, (caixa.y + y + oy) * escala, escala, escala)
     }
   }
 }
@@ -101,6 +120,7 @@ export function desenharSkin(
   skin: Skin,
   vista: Vista = 'frente',
   escala = ESCALA,
+  quadro = -1,
 ): void {
   const molde = skin.tipo === 'humanoide' ? moldeHumanoide : moldeCriatura
   const partes = catalogo[skin.tipo]
@@ -127,26 +147,34 @@ export function desenharSkin(
     if (i >= 0) camadas.push(...camadas.splice(i, 1))
   }
 
+  const alturaCorpo = camadas.find((c) => c.tipo === 'corpo')?.caixa.altura ?? 0
+  const poseAtual = pose(skin.tipo, vista, quadro, alturaCorpo)
+
   for (const { parte, caixa, tipo } of camadas) {
     const matriz = vista === 'lado' ? parte.lado : parte.frente
-    desenharMatriz(ctx, matriz, caixa, coresDaParte(parte, skin, tipo), escala)
+    desenharMatriz(ctx, matriz, caixa, coresDaParte(parte, skin, tipo), escala, poseAtual[tipo])
   }
 }
 
 const cache = new Map<string, HTMLCanvasElement>()
 
-/** Limite do cache: cada entrada é um canvas de 144x144 (~80 KB). */
-const LIMITE_CACHE = 300
+/**
+ * Limite do cache. Cada entrada é um canvas de 144x144 (~80 KB).
+ *
+ * O pior caso é cada avatar da cena com a sua skin: 1 sprite parado mais um
+ * por quadro de caminhada. O lado esquerdo não entra na conta porque é
+ * espelhado na hora de desenhar, não rasterizado de novo.
+ */
+const LIMITE_CACHE = 420
 
 /** Devolve a skin rasterizada e pronta para `drawImage`. */
 export function spriteDaSkin(
   skin: Skin,
   vista: Vista = 'frente',
-  direcao: Direcao = 'direita',
   escala = ESCALA,
+  quadro = -1,
 ): HTMLCanvasElement {
-  const espelhar = vista === 'lado' && direcao === 'esquerda'
-  const chave = `${chaveDaSkin(skin)}@${vista}${espelhar ? 'E' : ''}@${escala}`
+  const chave = `${chaveDaSkin(skin)}@${vista}@${escala}@${quadro}`
   const pronto = cache.get(chave)
   if (pronto) return pronto
 
@@ -157,12 +185,7 @@ export function spriteDaSkin(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D não disponível ao rasterizar a skin.')
   ctx.imageSmoothingEnabled = false
-
-  if (espelhar) {
-    ctx.translate(canvas.width, 0)
-    ctx.scale(-1, 1)
-  }
-  desenharSkin(ctx, skin, vista, escala)
+  desenharSkin(ctx, skin, vista, escala, quadro)
 
   if (cache.size >= LIMITE_CACHE) {
     const primeira = cache.keys().next()

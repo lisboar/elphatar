@@ -13,4 +13,10 @@ export const ambiente = {
 
   /** Mostra diagnóstico na tela: ?debug=1 */
   debug: query.get('debug') === '1',
+
+  /** Painel de teste com chat falso: ?teste=1 */
+  teste: query.get('teste') === '1',
+
+  /** Enche a cena com N viewers falsos de uma vez: ?falsos=30 */
+  falsos: Number(query.get('falsos') ?? '0') || 0,
 }

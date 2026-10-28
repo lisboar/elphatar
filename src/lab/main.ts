@@ -211,11 +211,17 @@ function redesenhar(): void {
     const ctx = contexto(c)
     ctx.clearRect(0, 0, c.width, c.height)
     // Passa pelo mesmo caminho do overlay: sprite em cache, depois drawImage.
-    ctx.drawImage(
-      spriteDaSkin(skin, v.vista, v.espelhar ? 'esquerda' : 'direita', ESCALA_PALCO),
-      0,
-      0,
-    )
+    // O lado esquerdo e o mesmo sprite espelhado na hora.
+    const sprite = spriteDaSkin(skin, v.vista, ESCALA_PALCO)
+    if (v.espelhar) {
+      ctx.save()
+      ctx.translate(c.width, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(sprite, 0, 0)
+      ctx.restore()
+    } else {
+      ctx.drawImage(sprite, 0, 0)
+    }
   })
   for (const a of atualizadores) a()
   json.textContent = JSON.stringify(skin, null, 2)

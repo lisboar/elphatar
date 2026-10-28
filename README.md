@@ -38,6 +38,8 @@ No comeco de cada sessao: `git pull`. No fim: `git push`.
 |---|---|
 | Overlay (OBS) | https://lisboar.github.io/elphatar/ |
 | Overlay com diagnostico | https://lisboar.github.io/elphatar/?debug=1 |
+| Overlay com chat falso | https://lisboar.github.io/elphatar/?teste=1 |
+| Overlay cheio, para medir | https://lisboar.github.io/elphatar/?teste=1&falsos=30 |
 | Laboratorio de partes | https://lisboar.github.io/elphatar/laboratorio.html |
 
 `?debug=1` desenha moldura, a faixa dos avatares e o fps — serve para

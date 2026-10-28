@@ -110,7 +110,7 @@ Cada etapa termina com o "ok" do Thainã.
 
 ## Onde estamos (atualizado em 28/10/2026)
 
-**Etapas 0 e 1 concluídas.** Próxima: Etapa 2.
+**Etapas 0, 1 e 2 concluídas.** Próxima: Etapa 3 (chat real da Twitch).
 
 ### Decisões tomadas no caminho (mudam o que está escrito acima)
 - **Molde:** 48×48 em escala 3× (144 px na tela), não 32×32. Chegamos a testar
@@ -140,12 +140,28 @@ Cada etapa termina com o "ok" do Thainã.
 - Acessório preto encostando no contorno abria buraco na silhueta → os
   detalhes escuros ficam afastados da borda.
 
-### O que falta saber antes da Etapa 2
-A animação de caminhada ainda não existe. O humanoide dá para animar por
-código, deslocando as camadas (perna, braço, cabeça) a cada quadro, porque
-elas são partes separadas. A criatura é um desenho só: vai precisar de um
-quadro extra de patas, ou de um deslocamento da metade de baixo da matriz.
-Isso é a primeira coisa a resolver na Etapa 2.
+### Como a caminhada foi resolvida (Etapa 2)
+Nenhum desenho novo: a animação desloca as camadas que já existem.
+- **Humanoide:** perna, braço e cabeça são partes separadas, então basta
+  movê-las. De frente cada perna sobe na sua vez; de perfil a perna vai à
+  frente e atrás, e o braço faz o contrário.
+- **Criatura:** é um desenho só, então as últimas 10 linhas da matriz (patas,
+  pés da galinha, barra do fantasma) são cortadas ao meio e as duas metades
+  andam em contrafase.
+- Ciclo de 4 quadros, 0,16 s por quadro. `quadro = -1` é o avatar parado.
+
+### Desempenho medido (Etapa 2)
+Chrome headless, 1920x1080, medido pelo CDP depois do cache aquecer:
+- 30 avatares: 60 fps, ~2,6 ms de CPU por quadro
+- 60 avatares (o limite): 60 fps, ~3 a 5 ms por quadro
+O primeiro segundo custa mais (até 17 ms) porque é quando os sprites são
+rasterizados. Guardar os dois lados no cache estourava o limite e fazia o
+overlay re-rasterizar a cada quadro: agora o lado esquerdo é o mesmo sprite
+espelhado na hora do `drawImage`.
+
+### O que falta saber antes da Etapa 3
+Nada bloqueando. O adaptador de chat entra em `src/main.ts`, chamando
+`cena.entrar()` e `avatar.falar()` — a cena já está pronta para receber.
 
 ## Fase 2 (não começar antes da Fase 1 terminar)
 - Advanced Scene Switcher detectando, em recortes pequenos da tela:

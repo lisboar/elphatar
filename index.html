@@ -20,6 +20,42 @@
         width: 100%;
         height: 100%;
       }
+
+      /* Painel de teste (?teste=1). Nunca aparece no OBS. */
+      .painel {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        max-width: 620px;
+        padding: 10px;
+        border: 1px solid #3a2238;
+        border-radius: 10px;
+        background: rgba(20, 10, 18, 0.92);
+        color: #ffd6ef;
+        font: 13px system-ui, sans-serif;
+      }
+      .painel button {
+        padding: 6px 11px;
+        border: 1px solid #3a2238;
+        border-radius: 6px;
+        background: #2a1a2b;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      .painel button:hover {
+        border-color: #ff4fb0;
+        color: #fff;
+      }
+      .painel .contador {
+        margin-left: 4px;
+        font-family: ui-monospace, monospace;
+        opacity: 0.75;
+      }
     </style>
   </head>
   <body>
