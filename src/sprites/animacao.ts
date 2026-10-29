@@ -15,9 +15,6 @@ import type { Movimento, Passada, Vista } from './molde'
 /** Quantos quadros tem o ciclo de caminhada. */
 export const QUADROS = 4
 
-/** Linhas finais da matriz da criatura que contam como pata, de frente. */
-export const LINHAS_DE_PATA = 10
-
 export interface Desvio {
   readonly dx?: number
   readonly dy?: number
@@ -28,8 +25,7 @@ export interface Deslocamento extends Desvio {
   readonly pernasDe?: number
   /**
    * Colunas onde as pernas se separam. Cada faixa inclui a coluna do corte,
-   * que vira contorno — assim cada perna tem a sua borda. Sem cortes e com
-   * duas faixas, a matriz é dividida ao meio.
+   * que vira contorno — assim cada perna tem a sua borda.
    */
   readonly cortes?: readonly number[]
   /** Desvio de cada faixa, somado ao da parte. */
@@ -50,23 +46,6 @@ const PARADO: Pose = {}
 export interface TipoAnimado {
   readonly nome: string
   readonly movimento: Movimento
-  readonly altura: number
-}
-
-/**
- * De frente a caminhada não mostra passada: mostra o peso trocando de pé.
- * Cada perna sobe um pixel na sua vez, e o corpo acompanha.
- */
-function humanoideFrente(quadro: number, movimento: Movimento): Deslocamento {
-  const esquerda = quadro === 1
-  const direita = quadro === 3
-  if (movimento === 'perna') {
-    return { pernasDe: 0, faixas: [{ dy: esquerda ? -2 : 0 }, { dy: direita ? -2 : 0 }] }
-  }
-  if (movimento === 'braco') {
-    return { pernasDe: 0, faixas: [{ dy: direita ? -1 : 0 }, { dy: esquerda ? -1 : 0 }] }
-  }
-  return { dy: esquerda || direita ? -1 : 0 }
 }
 
 /**
@@ -85,13 +64,13 @@ function humanoideLado(quadro: number, movimento: Movimento, passada?: Passada):
 }
 
 /** A criatura é um desenho só: só as patas se mexem, e o corpo balança. */
-function criatura(quadro: number, vista: Vista, altura: number, passada?: Passada): Deslocamento {
-  // de perfil o corpo não balança: se ele sobe e a pata não, abre uma fresta
-  // entre os dois
-  const sobe = quadro % 2 === 1 && !(vista === 'lado' && passada) ? -1 : 0
+function criatura(quadro: number, passada?: Passada): Deslocamento {
+  // com passada o corpo não balança: se ele sobe e a pata não, abre uma
+  // fresta entre os dois
+  const sobe = quadro % 2 === 1 && !passada ? -1 : 0
   const passo = [0, 1, 0, -1][quadro] ?? 0
 
-  if (vista === 'lado' && passada?.cortes) {
+  if (passada?.cortes) {
     // patas alternadas: no quadro 1 sobem as pares, no 3 as ímpares, cada uma
     // para longe da vizinha. Cruzar as patas empilhava os contornos.
     const faixas = Array.from({ length: passada.cortes.length + 1 }, (_, i) => {
@@ -101,7 +80,7 @@ function criatura(quadro: number, vista: Vista, altura: number, passada?: Passad
     return { dy: sobe, pernasDe: passada.de, cortes: passada.cortes, faixas }
   }
 
-  if (vista === 'lado' && passada) {
+  if (passada) {
     return {
       dy: sobe,
       pernasDe: passada.de,
@@ -110,15 +89,12 @@ function criatura(quadro: number, vista: Vista, altura: number, passada?: Passad
     }
   }
 
-  return {
-    dy: sobe,
-    pernasDe: Math.max(0, altura - LINHAS_DE_PATA),
-    faixas: [{ dx: passo }, { dx: -passo }],
-  }
+  return { dy: sobe }
 }
 
 /**
  * Pose de um quadro, por tipo de parte. `quadro` -1 é o avatar parado.
+ * O avatar só anda de perfil: de frente ele está sempre parado.
  * Na criatura, o que não é `bicho` sobe e desce com o balanço do corpo.
  */
 export function pose(
@@ -128,13 +104,13 @@ export function pose(
   tipos: readonly TipoAnimado[],
   passadas: Passadas = {},
 ): Pose {
-  if (quadro < 0) return PARADO
+  if (quadro < 0 || vista === 'frente') return PARADO
   const q = ((quadro % QUADROS) + QUADROS) % QUADROS
   const resultado: Record<string, Deslocamento> = {}
 
   if (tipo === 'criatura') {
     const bicho = tipos.find((t) => t.movimento === 'bicho')
-    const corpo = criatura(q, vista, bicho?.altura ?? 0, bicho && passadas[bicho.nome])
+    const corpo = criatura(q, bicho && passadas[bicho.nome])
     for (const t of tipos) {
       resultado[t.nome] = t === bicho ? corpo : { dy: corpo.dy }
     }
@@ -142,10 +118,7 @@ export function pose(
   }
 
   for (const t of tipos) {
-    resultado[t.nome] =
-      vista === 'lado'
-        ? humanoideLado(q, t.movimento, passadas[t.nome])
-        : humanoideFrente(q, t.movimento)
+    resultado[t.nome] = humanoideLado(q, t.movimento, passadas[t.nome])
   }
   return resultado
 }

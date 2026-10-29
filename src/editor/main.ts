@@ -352,23 +352,42 @@ const NOMES_TINTA: Record<string, string> = {
   f: 'extra 2 luz',
 }
 const botoesTinta = new Map<string, { b: HTMLButtonElement; amostra: HTMLSpanElement }>()
-for (const c of CARACTERES) {
+
+function botaoDeTinta(c: string, rotulo: string, classe: string): HTMLButtonElement {
   const amostra = el('span', c === '.' ? 'vazio' : undefined)
   const b = botao('', () => {
     tinta = c
     atualizarFerramentas()
-  }, `${NOMES_TINTA[c]} — tecla ${c}`)
-  b.className = 'tinta'
-  b.append(amostra, c)
+  })
+  b.className = classe
+  b.title = NOMES_TINTA[c] ?? c
+  b.append(amostra, rotulo)
   botoesTinta.set(c, { b, amostra })
-  tintasEl.append(b)
+  return b
 }
+
+// O normal é pintar só a forma: o Acabamento faz contorno, sombra e luz.
+// As outras tintas ficam no Retoque, para ajuste fino.
+const retoque = el('div', 'tintas')
+retoque.hidden = true
+for (const c of CARACTERES) retoque.append(botaoDeTinta(c, c, 'tinta'))
+const bRetoque = botao('Retoque', () => {
+  retoque.hidden = !retoque.hidden
+  bRetoque.classList.toggle('ativo', !retoque.hidden)
+}, 'mostra todas as tintas: contorno, sombra, luz, branco...')
+tintasEl.append(
+  botaoDeTinta('1', 'Forma (F)', 'tinta grande'),
+  botaoDeTinta('.', 'Borracha (E)', 'tinta grande'),
+  botao('✨ Acabamento (A)', acabamento, 'refaz contorno, sombra e luz nas duas vistas'),
+  bRetoque,
+)
+tintasEl.after(retoque)
 
 colMeio.append(
   el('div', 'atalhos',
-    'Clique esquerdo pinta, direito apaga. Teclas das tintas: . k w s 1 2 3 a b c d e f. ' +
-      'P lápis · G balde · I conta-gotas · M espelho · V vista · H camadas · setas movem o desenho · ' +
-      'Ctrl+Z / Ctrl+Y · Ctrl+S salva.'),
+    'Pinte a forma e aperte Acabamento (A). Clique direito apaga. ' +
+      'F forma · E borracha · P lápis · G balde · I conta-gotas · M espelho · V vista · H camadas · ' +
+      'setas movem o desenho · Ctrl+Z / Ctrl+Y · Ctrl+S salva.'),
 )
 
 function usar(f: Ferramenta): void {
@@ -594,6 +613,48 @@ quadro.addEventListener('pointerleave', () => {
 
 /* ---------- operações na vista ---------- */
 
+/** Tintas da forma: a cor do viewer e o contorno que a cerca. */
+const DA_FORMA = new Set(['1', '2', '3', 'k'])
+
+/**
+ * Refaz o acabamento de uma matriz, olhando só a silhueta:
+ * - contorno (k) em toda a borda da forma, fora da caixa conta como vazio
+ * - sombra (2) por dentro, na borda de baixo e da direita
+ * - luz (3) por dentro, na borda de cima
+ * Linha preta solta no meio da forma vira forma. Detalhes de outras tintas
+ * (branco, extras) ficam como estão. Rodar duas vezes dá o mesmo resultado.
+ */
+function acabar(m: readonly string[]): string[] {
+  const g = m.map((l) => l.split(''))
+  const ler = (x: number, y: number) => g[y]?.[x] ?? '.'
+  const vizinhos = (x: number, y: number) => [ler(x + 1, y), ler(x - 1, y), ler(x, y + 1), ler(x, y - 1)]
+
+  // contorno antigo (e linha preta) que só encosta na forma volta a ser forma
+  g.forEach((linha, y) => linha.forEach((c, x) => {
+    if (c === 'k' && vizinhos(x, y).every((v) => v === '.' || DA_FORMA.has(v))) g[y]![x] = '1'
+  }))
+  const borda = g.map((linha, y) => linha.map((c, x) => DA_FORMA.has(c) && vizinhos(x, y).includes('.')))
+  g.forEach((linha, y) => linha.forEach((c, x) => {
+    if (borda[y]![x]) linha[x] = 'k'
+    else if (c !== 'k' && DA_FORMA.has(c)) linha[x] = '1'
+  }))
+  const contorno = (x: number, y: number) => borda[y]?.[x] ?? true
+  g.forEach((linha, y) => linha.forEach((c, x) => {
+    if (c !== '1') return
+    if (contorno(x + 1, y) || contorno(x, y + 1)) linha[x] = '2'
+    else if (contorno(x, y - 1)) linha[x] = '3'
+  }))
+  return g.map((l) => l.join(''))
+}
+
+function acabamento(): void {
+  lembrar()
+  const p = parte()
+  p.frente = acabar(p.frente)
+  p.lado = acabar(p.lado)
+  mudou()
+}
+
 function deslocar(dx: number, dy: number): void {
   lembrar()
   const m = parte()[vista]
@@ -758,23 +819,26 @@ function aplicarCaixa(nova: Caixa): void {
 
 /* ---------- coluna da direita: prévia e propriedades ---------- */
 
-const ESCALA_PREVIA = 3
-const previaParado = el('div', 'previa')
-const previaAndando = el('div', 'previa')
+const previa = el('div', 'previa')
 const skinEl = el('div', 'campos')
 const aleatoriasEl = el('div', 'aleatorias')
 const parteEl = el('div', 'campos')
+const avancadoEl = el('div', 'campos')
 const tipoEl = el('div', 'campos')
-
-colDir.append(
-  el('h2', undefined, 'Parado (3×)'),
-  previaParado,
-  el('h2', undefined, 'Andando (3×) e no tamanho do overlay (2×)'),
-  previaAndando,
-  el('h2', undefined, 'Esta parte'),
-  parteEl,
+const avancado = el('details')
+avancado.append(
+  el('summary', undefined, 'Avançado'),
+  avancadoEl,
   el('h2', undefined, 'Tipo'),
   tipoEl,
+)
+
+colDir.append(
+  el('h2', undefined, 'Como fica no overlay'),
+  previa,
+  el('h2', undefined, 'Esta parte'),
+  parteEl,
+  avancado,
   el('h2', undefined, 'Boneco da prévia'),
   skinEl,
   el('h2', undefined, 'Em outros bonecos'),
@@ -806,14 +870,15 @@ function tela(pai: HTMLElement, rotulo: string, t: Omit<Tela, 'canvas'>): void {
   telas.push({ canvas, ...t })
 }
 
-const VISTAS: { rotulo: string; vista: Vista; espelhar: boolean }[] = [
-  { rotulo: 'frente', vista: 'frente', espelhar: false },
-  { rotulo: 'direita', vista: 'lado', espelhar: false },
-  { rotulo: 'esquerda', vista: 'lado', espelhar: true },
+// o overlay só mostra isto: de frente parado, de lado andando
+const VISTAS: Omit<Tela, 'canvas' | 'escala'>[] = [
+  { vista: 'frente', espelhar: false, andando: false },
+  { vista: 'lado', espelhar: false, andando: true },
+  { vista: 'lado', espelhar: true, andando: true },
 ]
-for (const v of VISTAS) tela(previaParado, v.rotulo, { ...v, escala: ESCALA_PREVIA, andando: false })
-for (const v of VISTAS) tela(previaAndando, v.rotulo, { ...v, escala: ESCALA_PREVIA, andando: true })
-for (const v of VISTAS.slice(0, 2)) tela(previaAndando, '', { ...v, escala: 2, andando: true })
+const ROTULOS = ['parado', 'andando →', '← andando']
+VISTAS.forEach((v, i) => tela(previa, `${ROTULOS[i]} 3×`, { ...v, escala: 3 }))
+VISTAS.forEach((v, i) => tela(previa, `${ROTULOS[i]} 2× (real)`, { ...v, escala: 2 }))
 const TELAS_FIXAS = telas.length
 
 /** A skin da prévia, com a parte que está sendo editada. */
@@ -834,7 +899,7 @@ function sortearAleatorias(): void {
       if (typeof sel === 'string') return s
       return { ...s, partes: { ...s.partes, [tipo().nome]: sel } }
     }
-    tela(caixa, '', { vista: 'frente', espelhar: false, escala: 2, andando: true, skin: comParte })
+    tela(caixa, '', { vista: 'frente', espelhar: false, escala: 2, andando: false, skin: comParte })
     tela(caixa, '', { vista: 'lado', espelhar: false, escala: 2, andando: true, skin: comParte })
   })
 }
@@ -864,7 +929,12 @@ function campo(pai: HTMLElement, rotulo: string, ...filhos: (HTMLElement | strin
 }
 
 /** Opção de cor que pode ficar desligada (a parte usa a cor do slot). */
-function corOpcional(pai: HTMLElement, rotulo: string, chave: 'fixa' | 'extra1' | 'extra2', nota: string): void {
+function corOpcional(
+  pai: HTMLElement,
+  rotulo: string,
+  chave: 'fixa' | 'extra1' | 'extra2',
+  nota: string,
+): void {
   const p = parte()
   const liga = el('input')
   liga.type = 'checkbox'
@@ -887,6 +957,7 @@ function corOpcional(pai: HTMLElement, rotulo: string, chave: 'fixa' | 'extra1' 
 function montarPropriedades(): void {
   const p = parte()
   parteEl.textContent = ''
+  avancadoEl.textContent = ''
 
   const nome = el('input')
   nome.value = p.nome
@@ -896,9 +967,9 @@ function montarPropriedades(): void {
     mudou(true)
   })
   campo(parteEl, 'nome', nome)
-  corOpcional(parteEl, 'cor fixa', 'fixa', `ligada, ignora a cor de ${tipo().slot}`)
-  corOpcional(parteEl, 'extra 1', 'extra1', 'tintas a b c')
-  corOpcional(parteEl, 'extra 2', 'extra2', 'tintas d e f')
+  corOpcional(parteEl, 'cor fixa', 'fixa', `desligada, a forma usa a cor de ${tipo().slot} do viewer`)
+  corOpcional(avancadoEl, 'extra 1', 'extra1', 'tintas a b c')
+  corOpcional(avancadoEl, 'extra 2', 'extra2', 'tintas d e f')
 
   const atras = el('input')
   atras.type = 'checkbox'
@@ -909,7 +980,7 @@ function montarPropriedades(): void {
     else delete parte().atras
     mudou(true)
   })
-  campo(parteEl, 'atrás', atras, el('span', 'nota', 'desenha atrás do corpo (asa, cauda)'))
+  campo(avancadoEl, 'atrás', atras, el('span', 'nota', 'desenha atrás do corpo (asa, cauda)'))
 
   const temPassada = el('input')
   temPassada.type = 'checkbox'
@@ -932,8 +1003,8 @@ function montarPropriedades(): void {
     mudou(true)
   }
   for (const i of [temPassada, de, cortes]) i.addEventListener('change', aplicarPassada)
-  campo(parteEl, 'passada', temPassada, 'linha', de, 'cortes', cortes)
-  parteEl.append(el('span'), el('p', 'nota',
+  campo(avancadoEl, 'passada', temPassada, 'linha', de, 'cortes', cortes)
+  avancadoEl.append(el('span'), el('p', 'nota',
     'De perfil, da linha em diante a matriz é perna (linha azul no quadro). ' +
     'Sem cortes, a perna de trás é uma cópia escura; com cortes, cada faixa é uma pata.'))
 
@@ -1125,7 +1196,8 @@ window.addEventListener('beforeunload', (e) => {
 
 /* ---------- teclado ---------- */
 
-const TINTAS = new Set<string>(CARACTERES)
+/** Atalhos de tinta: só a forma e a borracha. As do Retoque são no clique. */
+const TINTAS: Record<string, string> = { '1': '1', f: '1', '.': '.', '0': '.', e: '.' }
 
 window.addEventListener('keydown', (e) => {
   const tecla = e.key.toLowerCase()
@@ -1155,11 +1227,12 @@ window.addEventListener('keydown', (e) => {
   if (setas[tecla]) {
     e.preventDefault()
     deslocar(...setas[tecla]!)
-  } else if (TINTAS.has(tecla)) {
-    tinta = tecla
+  } else if (TINTAS[tecla]) {
+    tinta = TINTAS[tecla]!
     atualizarFerramentas()
   } else if (tecla === 'p') usar('lapis')
   else if (tecla === 'g') usar('balde')
+  else if (tecla === 'a') acabamento()
   else if (tecla === 'i') usar('conta')
   else if (tecla === 'm') {
     espelho = !espelho

@@ -17,6 +17,9 @@
       * {
         box-sizing: border-box;
       }
+      [hidden] {
+        display: none !important;
+      }
       body {
         margin: 0;
         background: var(--escuro);
@@ -173,6 +176,7 @@
       .tintas {
         display: flex;
         flex-wrap: wrap;
+        align-items: stretch;
         gap: 4px;
         margin-bottom: 10px;
         max-width: 580px;
@@ -190,6 +194,24 @@
         margin: 0 4px 2px;
         border: 1px solid var(--borda);
         border-radius: 3px;
+      }
+      .tinta.grande {
+        width: auto;
+        min-width: 92px;
+        padding: 4px 10px 3px;
+        font-family: inherit;
+        font-size: 12px;
+      }
+      details {
+        margin-top: 14px;
+      }
+      summary {
+        cursor: pointer;
+        font-size: 11px;
+        color: var(--rosa);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
       }
       .tinta .vazio {
         background: repeating-conic-gradient(#3a2238 0 25%, #1a1019 0 50%) 0 0 / 8px 8px;

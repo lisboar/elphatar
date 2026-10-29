@@ -143,11 +143,7 @@ function desenharMatriz(
   }
 
   const faixas = desl.faixas ?? [{}]
-  const explicitos = desl.cortes !== undefined
-  // sem cortes, a divisão é no meio da grade, não da caixa: assim braço,
-  // perna e o que segue os dois se dividem na mesma coluna
-  const meio = Math.min(largura, Math.max(0, GRADE / 2 - caixa.x))
-  const cortes = desl.cortes ?? (faixas.length > 1 ? [meio] : [])
+  const cortes = desl.cortes ?? []
   const limites = [0, ...cortes, largura]
 
   faixas.forEach((f, i) => {
@@ -158,7 +154,7 @@ function desenharMatriz(
       ...pernas,
       colunaDe: de,
       colunaAte: ate,
-      bordas: explicitos ? [de, ate - 1].filter((c) => c > 0 && c < largura - 1) : undefined,
+      bordas: [de, ate - 1].filter((c) => c > 0 && c < largura - 1),
     }, dx + (f.dx ?? 0), dy + (f.dy ?? 0))
   })
 }
@@ -224,8 +220,7 @@ export function desenharSkin(
     camadas.splice(0, camadas.length, ...resto, ...bracos)
   }
 
-  const animados = tipos.map((t) => ({ nome: t.nome, movimento: t.movimento, altura: t.caixa.altura }))
-  const poseAtual = pose(skin.tipo, vista, quadro, animados, passadas)
+  const poseAtual = pose(skin.tipo, vista, quadro, tipos, passadas)
 
   for (const { parte, tipo } of camadas) {
     const matriz = vista === 'lado' ? parte.lado : parte.frente
