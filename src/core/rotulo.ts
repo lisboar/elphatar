@@ -8,7 +8,7 @@ import { config } from '../config/config'
  * seria o maior custo do overlay.
  */
 
-const FONTE_NOME = `bold ${config.texto.tamanhoNome}px ${config.texto.familia}`
+const FONTE_NOME = `${config.texto.tamanhoNome}px ${config.texto.familia}`
 const FONTE_BALAO = `${config.texto.tamanhoBalao}px ${config.texto.familia}`
 
 function contexto(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
@@ -33,7 +33,7 @@ export function desenharNome(nome: string): HTMLCanvasElement {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.lineJoin = 'round'
-  ctx.lineWidth = 4
+  ctx.lineWidth = 3
   ctx.strokeStyle = config.cores.escuro
   ctx.strokeText(nome, largura / 2, altura / 2)
   ctx.fillStyle = config.cores.rosaClaro
@@ -65,7 +65,7 @@ export function desenharBalao(texto: string): HTMLCanvasElement {
 
   const linhas = quebrar(medidor, texto, config.balao.larguraMaxima)
   const larguraTexto = Math.max(...linhas.map((l) => medidor.measureText(l).width))
-  const alturaLinha = config.texto.tamanhoBalao + 6
+  const alturaLinha = config.texto.tamanhoBalao + 4
 
   const p = config.balao.respiro
   const largura = Math.ceil(larguraTexto) + p * 2

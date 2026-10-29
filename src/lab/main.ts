@@ -1,7 +1,7 @@
 import { catalogo, validarCatalogo, type TipoCorpo } from '../sprites/catalogo'
 import { GRADE, slotDaParte, type Slot, type Vista } from '../sprites/molde'
 import { paletas } from '../sprites/paletas'
-import { desenharParte, desenharSkin, spriteDaSkin } from '../sprites/render'
+import { MARGEM, desenharParte, desenharSkin, spriteDaSkin } from '../sprites/render'
 import { comCor, comParte, skinAleatoria, type Skin } from '../sprites/skin'
 
 /**
@@ -213,14 +213,15 @@ function redesenhar(): void {
     // Passa pelo mesmo caminho do overlay: sprite em cache, depois drawImage.
     // O lado esquerdo e o mesmo sprite espelhado na hora.
     const sprite = spriteDaSkin(skin, v.vista, ESCALA_PALCO)
+    const folga = -MARGEM * ESCALA_PALCO
     if (v.espelhar) {
       ctx.save()
       ctx.translate(c.width, 0)
       ctx.scale(-1, 1)
-      ctx.drawImage(sprite, 0, 0)
+      ctx.drawImage(sprite, folga, folga)
       ctx.restore()
     } else {
-      ctx.drawImage(sprite, 0, 0)
+      ctx.drawImage(sprite, folga, folga)
     }
   })
   for (const a of atualizadores) a()

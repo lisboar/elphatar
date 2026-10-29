@@ -7,8 +7,10 @@ import {
   type Caixa,
   type Matriz,
   type Parte,
+  type Passada,
   type Vista,
 } from './molde'
+import { bocaAberta } from './partes/humanoide'
 import { BRANCO, CINZA, CONTORNO, rampa, type Rampa } from './cores'
 import { paletas } from './paletas'
 import { catalogo } from './catalogo'
@@ -64,6 +66,50 @@ function corDoCaractere(c: string, cores: Cores): string | null {
   }
 }
 
+/** A perna de trás: a mesma rampa, um tom abaixo. */
+function escurecer(r: Rampa | null): Rampa | null {
+  return r && { base: r.sombra, sombra: r.sombra, luz: r.base }
+}
+
+interface Recorte {
+  readonly linhaDe: number
+  readonly linhaAte: number
+  readonly colunaDe: number
+  readonly colunaAte: number
+  /** Colunas da borda da faixa que viram contorno. */
+  readonly bordas?: readonly number[]
+}
+
+function pintar(
+  ctx: CanvasRenderingContext2D,
+  matriz: Matriz,
+  caixa: Caixa,
+  cores: Cores,
+  escala: number,
+  recorte: Recorte,
+  ox: number,
+  oy: number,
+): void {
+  for (let y = recorte.linhaDe; y < recorte.linhaAte; y++) {
+    const linha = matriz[y]!
+    for (let x = recorte.colunaDe; x < recorte.colunaAte; x++) {
+      const c = linha[x]!
+      if (c === '.') continue
+      const cor = recorte.bordas?.includes(x) ? CONTORNO : corDoCaractere(c, cores)
+      if (!cor) continue
+
+      // arredonda as duas bordas: com escala fracionária cada pixel da arte
+      // vira 2 ou 3 da tela, sem fresta entre eles
+      const x0 = Math.round((caixa.x + x + ox) * escala)
+      const y0 = Math.round((caixa.y + y + oy) * escala)
+      const x1 = Math.round((caixa.x + x + ox + 1) * escala)
+      const y1 = Math.round((caixa.y + y + oy + 1) * escala)
+      ctx.fillStyle = cor
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
+    }
+  }
+}
+
 function desenharMatriz(
   ctx: CanvasRenderingContext2D,
   matriz: Matriz,
@@ -74,30 +120,46 @@ function desenharMatriz(
 ): void {
   const dx = desl?.dx ?? 0
   const dy = desl?.dy ?? 0
-  const meio = matriz[0] ? matriz[0].length / 2 : 0
+  const altura = matriz.length
+  const largura = matriz[0]?.length ?? 0
+  const pernasDe = desl?.pernasDe ?? altura
 
-  for (let y = 0; y < matriz.length; y++) {
-    const linha = matriz[y]!
-    // abaixo de `alternarDe` as duas metades andam cada uma para o seu lado:
-    // é o que faz as pernas (uma parte só) alternarem a passada
-    const alterna = desl?.alternarDe !== undefined && y >= desl.alternarDe
+  pintar(ctx, matriz, caixa, cores, escala, {
+    linhaDe: 0,
+    linhaAte: pernasDe,
+    colunaDe: 0,
+    colunaAte: largura,
+  }, dx, dy)
+  if (!desl || pernasDe >= altura) return
 
-    for (let x = 0; x < linha.length; x++) {
-      const cor = corDoCaractere(linha[x]!, cores)
-      if (!cor) continue
+  const pernas = { linhaDe: pernasDe, linhaAte: altura }
 
-      let ox = dx
-      let oy = dy
-      if (alterna) {
-        const esquerda = x < meio
-        ox += (esquerda ? desl!.dxEsquerda : desl!.dxDireita) ?? 0
-        oy += (esquerda ? desl!.dyEsquerda : desl!.dyDireita) ?? 0
-      }
-
-      ctx.fillStyle = cor
-      ctx.fillRect((caixa.x + x + ox) * escala, (caixa.y + y + oy) * escala, escala, escala)
+  if (desl.eco) {
+    const escuro = {
+      principal: escurecer(cores.principal)!,
+      extra1: escurecer(cores.extra1),
+      extra2: escurecer(cores.extra2),
     }
+    pintar(ctx, matriz, caixa, escuro, escala, { ...pernas, colunaDe: 0, colunaAte: largura },
+      dx + (desl.eco.dx ?? 0), dy + (desl.eco.dy ?? 0))
   }
+
+  const faixas = desl.faixas ?? [{}]
+  const explicitos = desl.cortes !== undefined
+  const cortes = desl.cortes ?? (faixas.length > 1 ? [Math.floor(largura / 2)] : [])
+  const limites = [0, ...cortes, largura]
+
+  faixas.forEach((f, i) => {
+    const de = limites[i] ?? 0
+    // a faixa leva junto a coluna do corte, para cada perna ter a sua borda
+    const ate = i < cortes.length ? (limites[i + 1] ?? largura) + 1 : largura
+    pintar(ctx, matriz, caixa, cores, escala, {
+      ...pernas,
+      colunaDe: de,
+      colunaAte: ate,
+      bordas: explicitos ? [de, ate - 1].filter((c) => c > 0 && c < largura - 1) : undefined,
+    }, dx + (f.dx ?? 0), dy + (f.dy ?? 0))
+  })
 }
 
 function coresDaParte(parte: Parte, skin: Skin, tipo: string): Cores {
@@ -114,6 +176,12 @@ function coresDaParte(parte: Parte, skin: Skin, tipo: string): Cores {
   return { principal: rampa(hex), extra1, extra2 }
 }
 
+/**
+ * Folga em volta do desenho, em pixels da arte. A caminhada sobe o corpo e
+ * desloca as pernas: sem folga, o chapéu e a auréola eram cortados no topo.
+ */
+export const MARGEM = 2
+
 /** Desenha a skin num contexto já posicionado, sem cache. */
 export function desenharSkin(
   ctx: CanvasRenderingContext2D,
@@ -121,6 +189,7 @@ export function desenharSkin(
   vista: Vista = 'frente',
   escala = ESCALA,
   quadro = -1,
+  falando = false,
 ): void {
   const molde = skin.tipo === 'humanoide' ? moldeHumanoide : moldeCriatura
   const partes = catalogo[skin.tipo]
@@ -128,12 +197,15 @@ export function desenharSkin(
   // Object.entries segue a ordem de declaração do molde: de trás pra frente.
   // Antes disso vêm as partes marcadas `atras`, que não podem cobrir o corpo.
   const camadas: { parte: Parte; caixa: Caixa; tipo: string }[] = []
+  const passadas: Record<string, Passada> = {}
 
   for (const [tipo, caixa] of Object.entries(molde)) {
     const lista = partes[tipo as keyof typeof partes] as readonly Parte[]
     const indice = skin.partes[tipo as keyof typeof skin.partes] ?? 0
-    const parte = lista[indice % lista.length]
+    // a boca aberta não é escolha do viewer: aparece só enquanto há balão
+    const parte = tipo === 'boca' && falando ? bocaAberta : lista[indice % lista.length]
     if (!parte) continue
+    if (parte.passada) passadas[tipo] = parte.passada
 
     const camada = { parte, caixa, tipo }
     if (parte.atras) camadas.unshift(camada)
@@ -148,7 +220,7 @@ export function desenharSkin(
   }
 
   const alturaCorpo = camadas.find((c) => c.tipo === 'corpo')?.caixa.altura ?? 0
-  const poseAtual = pose(skin.tipo, vista, quadro, alturaCorpo)
+  const poseAtual = pose(skin.tipo, vista, quadro, alturaCorpo, passadas)
 
   for (const { parte, caixa, tipo } of camadas) {
     const matriz = vista === 'lado' ? parte.lado : parte.frente
@@ -159,33 +231,45 @@ export function desenharSkin(
 const cache = new Map<string, HTMLCanvasElement>()
 
 /**
- * Limite do cache. Cada entrada é um canvas de 144x144 (~80 KB).
+ * Limite do cache. Cada entrada é um canvas de 104x104 (~43 KB).
  *
  * O pior caso é cada avatar da cena com a sua skin: 1 sprite parado mais um
- * por quadro de caminhada. O lado esquerdo não entra na conta porque é
- * espelhado na hora de desenhar, não rasterizado de novo.
+ * por quadro de caminhada, e o mesmo de novo com a boca aberta. O lado
+ * esquerdo não entra na conta porque é espelhado na hora de desenhar.
  */
-const LIMITE_CACHE = 420
+const LIMITE_CACHE = 660
 
-/** Devolve a skin rasterizada e pronta para `drawImage`. */
+/** Lado do sprite rasterizado, em pixels da tela, já com a margem. */
+export function ladoDoSprite(escala: number): number {
+  return Math.round((GRADE + MARGEM * 2) * escala)
+}
+
+/**
+ * Devolve a skin rasterizada e pronta para `drawImage`. O canvas tem
+ * `MARGEM` pixels da arte de folga em cada lado.
+ */
 export function spriteDaSkin(
   skin: Skin,
   vista: Vista = 'frente',
   escala = ESCALA,
   quadro = -1,
+  falando = false,
 ): HTMLCanvasElement {
-  const chave = `${chaveDaSkin(skin)}@${vista}@${escala}@${quadro}`
+  const boca = falando && skin.tipo === 'humanoide'
+  const chave = `${chaveDaSkin(skin)}@${vista}@${escala}@${quadro}@${boca ? 1 : 0}`
   const pronto = cache.get(chave)
   if (pronto) return pronto
 
   const canvas = document.createElement('canvas')
-  canvas.width = GRADE * escala
-  canvas.height = GRADE * escala
+  canvas.width = ladoDoSprite(escala)
+  canvas.height = ladoDoSprite(escala)
 
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Canvas 2D não disponível ao rasterizar a skin.')
   ctx.imageSmoothingEnabled = false
-  desenharSkin(ctx, skin, vista, escala, quadro)
+  const folga = Math.round(MARGEM * escala)
+  ctx.translate(folga, folga)
+  desenharSkin(ctx, skin, vista, escala, quadro, boca)
 
   if (cache.size >= LIMITE_CACHE) {
     const primeira = cache.keys().next()

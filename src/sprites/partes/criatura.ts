@@ -12,6 +12,7 @@ import type { Parte, TipoParteCriatura } from '../molde'
 const corpo: Parte[] = [
   {
     nome: 'gato',
+    passada: { de: 36, cortes: [14, 20, 26] },
     extra1: '#f2c9c0',
     frente: [
       '........................................',
@@ -108,6 +109,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'cachorro',
+    passada: { de: 35, cortes: [13, 20, 26] },
     extra1: '#f2e6d8',
     frente: [
       '........................................',
@@ -204,6 +206,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'capivara',
+    passada: { de: 38, cortes: [13, 19, 26] },
     extra1: '#8a5e3c',
     frente: [
       '........................................',
@@ -300,6 +303,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'galinha',
+    passada: { de: 39, cortes: [19] },
     extra1: '#f0b429',
     extra2: '#d64545',
     frente: [
@@ -397,6 +401,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'fantasma',
+    passada: { de: 35, cortes: [16, 24] },
     frente: [
       '........................................',
       '....................k...................',
@@ -492,6 +497,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'zumbi',
+    passada: { de: 36 },
     extra1: '#cbbca6',
     extra2: '#b3252b',
     frente: [
@@ -589,6 +595,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'et',
+    passada: { de: 31 },
     fixa: '#7fd86a',
     frente: [
       '........................................',
@@ -685,6 +692,7 @@ const corpo: Parte[] = [
   },
   {
     nome: 'boneco assassino',
+    passada: { de: 37 },
     extra1: '#e8c9a8',
     extra2: '#c25a1e',
     frente: [

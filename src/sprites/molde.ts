@@ -60,6 +60,18 @@ export interface Parte {
    */
   readonly semAcessorio?: boolean
   readonly ancoraAcessorio?: { readonly x: number; readonly y: number }
+  /**
+   * Como a parte anda de perfil. A partir da linha `de`, a matriz é perna.
+   * Com `cortes`, as colunas viram faixas (uma por perna) que andam em
+   * contrafase. Sem `cortes`, o desenho tem uma perna só, e a de trás é uma
+   * cópia mais escura dela.
+   */
+  readonly passada?: Passada
+}
+
+export interface Passada {
+  readonly de: number
+  readonly cortes?: readonly number[]
 }
 
 export type TipoParteHumanoide =

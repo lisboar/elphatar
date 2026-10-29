@@ -159,6 +159,17 @@ rasterizados. Guardar os dois lados no cache estourava o limite e fazia o
 overlay re-rasterizar a cada quadro: agora o lado esquerdo é o mesmo sprite
 espelhado na hora do `drawImage`.
 
+### Ajustes depois da revisão da Etapa 2 (29/10/2026)
+- Na tela o avatar usa escala 2 (96 px). O Laboratório continua em 3×.
+- De perfil, a perna de trás é uma cópia mais escura da perna da frente
+  (`eco`). As patas das criaturas são cortadas em faixas, uma por pata
+  (`passada` em cada criatura). Com as patas na passada, o corpo do bicho
+  não balança, porque senão abre uma fresta entre o corpo e a pata.
+- A calça tem perna própria de perfil, que acompanha a perna.
+- O sprite tem 2 px de folga (`MARGEM`), para a caminhada não cortar o chapéu.
+- A boca aberta não é mais opção de skin: só aparece enquanto há balão.
+- Nome menor, sem negrito. Balão menor e sempre na mesma altura.
+
 ### O que falta saber antes da Etapa 3
 Nada bloqueando. O adaptador de chat entra em `src/main.ts`, chamando
 `cena.entrar()` e `avatar.falar()` — a cena já está pronta para receber.

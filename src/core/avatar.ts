@@ -1,5 +1,5 @@
 import { config } from '../config/config'
-import { spriteDaSkin, type Direcao } from '../sprites/render'
+import { MARGEM, spriteDaSkin, type Direcao } from '../sprites/render'
 import { skinDeSemente, type Skin } from '../sprites/skin'
 import { desenharBalao, desenharNome } from './rotulo'
 
@@ -21,7 +21,6 @@ export class Avatar {
   private tempoDeQuadro = 0
   private quadro = 0
 
-  private readonly desvioDoBalao = Math.floor(Math.random() * 4) * 22
   private rotulo: HTMLCanvasElement
   private balao: HTMLCanvasElement | null = null
   private tempoDeBalao = 0
@@ -105,9 +104,12 @@ export class Avatar {
     const sprite = spriteDaSkin(
       this.skin,
       this.andando ? 'lado' : 'frente',
-      undefined,
+      config.escala,
       this.andando ? this.quadro : -1,
+      this.balao !== null,
     )
+    // o sprite tem folga em volta do desenho, para a caminhada não cortar nada
+    const folga = Math.round(MARGEM * config.escala)
 
     // andando para a esquerda, o mesmo sprite é espelhado na hora. Guardar os
     // dois lados no cache dobraria o numero de canvas por avatar.
@@ -115,10 +117,10 @@ export class Avatar {
       ctx.save()
       ctx.translate(esquerda + tamanho, topo)
       ctx.scale(-1, 1)
-      ctx.drawImage(sprite, 0, 0)
+      ctx.drawImage(sprite, -folga, -folga)
       ctx.restore()
     } else {
-      ctx.drawImage(sprite, esquerda, topo)
+      ctx.drawImage(sprite, esquerda - folga, topo - folga)
     }
 
     ctx.drawImage(
@@ -128,12 +130,10 @@ export class Avatar {
     )
 
     if (this.balao) {
-      // escalona a altura por avatar: dois vizinhos falando ao mesmo tempo
-      // nao empilham o balao exatamente no mesmo lugar
       ctx.drawImage(
         this.balao,
         Math.round(this.x - this.balao.width / 2),
-        Math.round(topo - this.balao.height - 2 - this.desvioDoBalao),
+        Math.round(topo - this.balao.height - 2),
       )
     }
   }

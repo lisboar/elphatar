@@ -1,4 +1,7 @@
-import { ESCALA, GRADE } from '../sprites/molde'
+import { GRADE } from '../sprites/molde'
+
+/** Pixels da tela por pixel da arte. Fracionária funciona, mas inteira fica mais nítida. */
+const ESCALA_AVATAR = 2
 
 /**
  * Configuração do overlay.
@@ -8,8 +11,10 @@ export const config = {
   /** Resolução lógica do canvas. O OBS usa a mesma. */
   tela: { largura: 1920, altura: 1080 },
 
-  /** Tamanho do avatar desenhado na tela, em pixels. */
-  avatar: GRADE * ESCALA,
+  escala: ESCALA_AVATAR,
+
+  /** Tamanho do avatar desenhado na tela, em pixels (48 x 2 = 96). */
+  avatar: GRADE * ESCALA_AVATAR,
 
   /** Faixa de baixo onde os avatares andam. */
   faixa: {
@@ -41,11 +46,11 @@ export const config = {
   balao: {
     /** Quanto tempo o balão fica na tela, em segundos. */
     duracao: 7,
-    larguraMaxima: 300,
+    larguraMaxima: 200,
     maximoDeLinhas: 4,
-    respiro: 12,
-    raio: 10,
-    rabicho: 9,
+    respiro: 7,
+    raio: 7,
+    rabicho: 6,
     fundo: '#fdf2fa',
     borda: '#ff4fb0',
     texto: '#2a1030',
@@ -53,8 +58,8 @@ export const config = {
 
   texto: {
     familia: 'system-ui, -apple-system, Segoe UI, sans-serif',
-    tamanhoNome: 19,
-    tamanhoBalao: 19,
+    tamanhoNome: 15,
+    tamanhoBalao: 14,
   },
 
   /** Quantos avatares cabem na cena antes de o overlay parar de aceitar novos. */
