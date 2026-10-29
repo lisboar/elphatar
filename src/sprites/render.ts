@@ -1,19 +1,17 @@
 import {
   ESCALA,
   GRADE,
-  moldeCriatura,
-  moldeHumanoide,
-  slotDaParte,
   type Caixa,
   type Matriz,
   type Parte,
   type Passada,
+  type Slot,
+  type TipoParte,
   type Vista,
 } from './molde'
-import { bocaAberta } from './partes/humanoide'
 import { BRANCO, CINZA, CONTORNO, rampa, type Rampa } from './cores'
 import { paletas } from './paletas'
-import { catalogo } from './catalogo'
+import { aoMudarCatalogo, especial, tipoDo, tiposDo, type TipoCorpo } from './catalogo'
 import { chaveDaSkin, type Skin } from './skin'
 import { pose, type Deslocamento } from './animacao'
 
@@ -146,7 +144,10 @@ function desenharMatriz(
 
   const faixas = desl.faixas ?? [{}]
   const explicitos = desl.cortes !== undefined
-  const cortes = desl.cortes ?? (faixas.length > 1 ? [Math.floor(largura / 2)] : [])
+  // sem cortes, a divisão é no meio da grade, não da caixa: assim braço,
+  // perna e o que segue os dois se dividem na mesma coluna
+  const meio = Math.min(largura, Math.max(0, GRADE / 2 - caixa.x))
+  const cortes = desl.cortes ?? (faixas.length > 1 ? [meio] : [])
   const limites = [0, ...cortes, largura]
 
   faixas.forEach((f, i) => {
@@ -162,7 +163,7 @@ function desenharMatriz(
   })
 }
 
-function coresDaParte(parte: Parte, skin: Skin, tipo: string): Cores {
+function coresDaParte(parte: Parte, skin: Skin, slot: Slot): Cores {
   const extra1 = parte.extra1 ? rampa(parte.extra1) : null
   const extra2 = parte.extra2 ? rampa(parte.extra2) : null
 
@@ -170,10 +171,14 @@ function coresDaParte(parte: Parte, skin: Skin, tipo: string): Cores {
     return { principal: rampa(parte.fixa), extra1, extra2 }
   }
 
-  const slot = slotDaParte[tipo as keyof typeof slotDaParte]
   const paleta = paletas[slot]
   const hex = paleta[skin.cores[slot] % paleta.length]!.hex
   return { principal: rampa(hex), extra1, extra2 }
+}
+
+/** A cor real de um caractere da matriz, com a skin aplicada. Usado no Editor. */
+export function corDaTinta(c: string, parte: Parte, skin: Skin, slot: Slot): string | null {
+  return corDoCaractere(c, coresDaParte(parte, skin, slot))
 }
 
 /**
@@ -191,40 +196,41 @@ export function desenharSkin(
   quadro = -1,
   falando = false,
 ): void {
-  const molde = skin.tipo === 'humanoide' ? moldeHumanoide : moldeCriatura
-  const partes = catalogo[skin.tipo]
-
-  // Object.entries segue a ordem de declaração do molde: de trás pra frente.
+  // A ordem dos tipos é a ordem de desenho: de trás pra frente.
   // Antes disso vêm as partes marcadas `atras`, que não podem cobrir o corpo.
-  const camadas: { parte: Parte; caixa: Caixa; tipo: string }[] = []
+  const tipos = tiposDo(skin.tipo)
+  const camadas: { parte: Parte; tipo: TipoParte }[] = []
   const passadas: Record<string, Passada> = {}
 
-  for (const [tipo, caixa] of Object.entries(molde)) {
-    const lista = partes[tipo as keyof typeof partes] as readonly Parte[]
-    const indice = skin.partes[tipo as keyof typeof skin.partes] ?? 0
+  for (const tipo of tipos) {
+    const indice = skin.partes[tipo.nome] ?? 0
     // a boca aberta não é escolha do viewer: aparece só enquanto há balão
-    const parte = tipo === 'boca' && falando ? bocaAberta : lista[indice % lista.length]
+    const aberta = tipo.nome === 'boca' && falando ? especial(skin.tipo, 'bocaAberta') : undefined
+    const parte = aberta ?? tipo.partes[indice % tipo.partes.length]
     if (!parte) continue
-    if (parte.passada) passadas[tipo] = parte.passada
+    if (parte.passada) passadas[tipo.nome] = parte.passada
 
-    const camada = { parte, caixa, tipo }
+    const camada = { parte, tipo }
     if (parte.atras) camadas.unshift(camada)
     else camadas.push(camada)
   }
 
-  // De perfil, o braço da frente fica por cima da roupa — é o braço mais
-  // perto de quem olha. De frente é o contrário: a manga cobre o ombro.
+  // De perfil, o braço da frente (e o que ele segura) fica por cima da roupa
+  // — é o braço mais perto de quem olha. De frente é o contrário: a manga
+  // cobre o ombro.
   if (vista === 'lado') {
-    const i = camadas.findIndex((c) => c.tipo === 'bracos')
-    if (i >= 0) camadas.push(...camadas.splice(i, 1))
+    const bracos = camadas.filter((c) => c.tipo.movimento === 'braco')
+    const resto = camadas.filter((c) => c.tipo.movimento !== 'braco')
+    camadas.splice(0, camadas.length, ...resto, ...bracos)
   }
 
-  const alturaCorpo = camadas.find((c) => c.tipo === 'corpo')?.caixa.altura ?? 0
-  const poseAtual = pose(skin.tipo, vista, quadro, alturaCorpo, passadas)
+  const animados = tipos.map((t) => ({ nome: t.nome, movimento: t.movimento, altura: t.caixa.altura }))
+  const poseAtual = pose(skin.tipo, vista, quadro, animados, passadas)
 
-  for (const { parte, caixa, tipo } of camadas) {
+  for (const { parte, tipo } of camadas) {
     const matriz = vista === 'lado' ? parte.lado : parte.frente
-    desenharMatriz(ctx, matriz, caixa, coresDaParte(parte, skin, tipo), escala, poseAtual[tipo])
+    const cores = coresDaParte(parte, skin, tipo.slot)
+    desenharMatriz(ctx, matriz, tipo.caixa, cores, escala, poseAtual[tipo.nome])
   }
 }
 
@@ -283,26 +289,23 @@ export function limparCacheDeSprites(): void {
   cache.clear()
 }
 
+// parte editada no Editor ou JSON salvo: os sprites antigos não valem mais
+aoMudarCatalogo(limparCacheDeSprites)
+
 /** Desenha uma parte sozinha, na posição que ela ocupa no molde. Usado no Laboratório. */
 export function desenharParte(
   ctx: CanvasRenderingContext2D,
-  tipoCorpo: 'humanoide' | 'criatura',
+  tipoCorpo: TipoCorpo,
   tipoParte: string,
   indice: number,
   skin: Skin,
   vista: Vista = 'frente',
   escala = ESCALA,
 ): void {
-  const molde = tipoCorpo === 'humanoide' ? moldeHumanoide : moldeCriatura
-  const caixa = molde[tipoParte as keyof typeof molde]
-  if (!caixa) return
-
-  const lista = catalogo[tipoCorpo][
-    tipoParte as keyof (typeof catalogo)[typeof tipoCorpo]
-  ] as readonly Parte[]
-  const parte = lista[indice % lista.length]
-  if (!parte) return
+  const tipo = tipoDo(tipoCorpo, tipoParte)
+  const parte = tipo?.partes[indice % tipo.partes.length]
+  if (!tipo || !parte) return
 
   const matriz = vista === 'lado' ? parte.lado : parte.frente
-  desenharMatriz(ctx, matriz, caixa, coresDaParte(parte, skin, tipoParte), escala)
+  desenharMatriz(ctx, matriz, tipo.caixa, coresDaParte(parte, skin, tipo.slot), escala)
 }

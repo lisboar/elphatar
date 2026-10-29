@@ -1,30 +1,26 @@
-import { catalogo, type TipoCorpo } from './catalogo'
+import { partesDo, tiposDo, type TipoCorpo } from './catalogo'
 import { paletas } from './paletas'
-import type { Slot, TipoParteCriatura, TipoParteHumanoide } from './molde'
+import { SLOTS, type Slot } from './molde'
 
 /**
  * A skin de um avatar: só índices. É o que vai e volta do Supabase (Etapa 4)
  * e o que os comandos do chat alteram (Etapa 5).
  */
-export interface SkinHumanoide {
-  readonly tipo: 'humanoide'
-  readonly partes: Record<TipoParteHumanoide, number>
-  readonly cores: Record<Slot, number>
+export interface Skin {
+  readonly tipo: TipoCorpo
+  /**
+   * Índice da parte escolhida, por tipo de parte. Tipo que falta (criado
+   * depois que a skin foi salva) usa a parte 0.
+   */
+  readonly partes: Readonly<Record<string, number>>
+  readonly cores: Readonly<Record<Slot, number>>
 }
-
-export interface SkinCriatura {
-  readonly tipo: 'criatura'
-  readonly partes: Record<TipoParteCriatura, number>
-  readonly cores: Record<Slot, number>
-}
-
-export type Skin = SkinHumanoide | SkinCriatura
 
 /** Chave estável de uma skin, para cache de desenho e comparação. */
 export function chaveDaSkin(skin: Skin): string {
   const partes = Object.keys(skin.partes)
     .sort()
-    .map((k) => `${k}${skin.partes[k as keyof typeof skin.partes]}`)
+    .map((k) => `${k}${skin.partes[k]}`)
     .join('')
   const cores = Object.keys(skin.cores)
     .sort()
@@ -55,8 +51,6 @@ function sorteador(semente: number): () => number {
   }
 }
 
-const SLOTS: Slot[] = ['pele', 'cabelo', 'roupa', 'olhos', 'criatura']
-
 function montar(tipo: TipoCorpo, sortear: () => number): Skin {
   const indice = (n: number) => Math.floor(sortear() * n)
 
@@ -64,17 +58,10 @@ function montar(tipo: TipoCorpo, sortear: () => number): Skin {
     SLOTS.map((slot) => [slot, indice(paletas[slot].length)]),
   ) as Record<Slot, number>
 
-  if (tipo === 'humanoide') {
-    const partes = Object.fromEntries(
-      Object.entries(catalogo.humanoide).map(([t, lista]) => [t, indice(lista.length)]),
-    ) as Record<TipoParteHumanoide, number>
-    return { tipo: 'humanoide', partes, cores }
-  }
-
   const partes = Object.fromEntries(
-    Object.entries(catalogo.criatura).map(([t, lista]) => [t, indice(lista.length)]),
-  ) as Record<TipoParteCriatura, number>
-  return { tipo: 'criatura', partes, cores }
+    tiposDo(tipo).map((t) => [t.nome, indice(t.partes.length)]),
+  )
+  return { tipo, partes, cores }
 }
 
 /** Skin aleatória. Sem semente, muda a cada chamada. */
@@ -94,15 +81,13 @@ export function skinDeSemente(texto: string, tipo?: TipoCorpo): Skin {
 
 /** Troca uma parte ou uma cor, devolvendo uma skin nova. */
 export function comParte(skin: Skin, tipo: string, indice: number): Skin {
-  if (!(tipo in skin.partes)) return skin
-  const listas = catalogo[skin.tipo] as Record<string, readonly unknown[]>
-  const lista = listas[tipo]
-  if (!lista) return skin
+  const lista = partesDo(skin.tipo, tipo)
+  if (lista.length === 0) return skin
   const n = ((indice % lista.length) + lista.length) % lista.length
-  return { ...skin, partes: { ...skin.partes, [tipo]: n } } as Skin
+  return { ...skin, partes: { ...skin.partes, [tipo]: n } }
 }
 
 export function comCor(skin: Skin, slot: Slot, indice: number): Skin {
   const n = ((indice % paletas[slot].length) + paletas[slot].length) % paletas[slot].length
-  return { ...skin, cores: { ...skin.cores, [slot]: n } } as Skin
+  return { ...skin, cores: { ...skin.cores, [slot]: n } }
 }

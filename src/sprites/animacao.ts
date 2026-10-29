@@ -1,4 +1,4 @@
-import type { Passada, Vista } from './molde'
+import type { Movimento, Passada, Vista } from './molde'
 
 /**
  * Animação de caminhada.
@@ -46,59 +46,46 @@ export type Passadas = Readonly<Partial<Record<string, Passada>>>
 
 const PARADO: Pose = {}
 
+/** O que a pose precisa saber de cada tipo de parte. */
+export interface TipoAnimado {
+  readonly nome: string
+  readonly movimento: Movimento
+  readonly altura: number
+}
+
 /**
  * De frente a caminhada não mostra passada: mostra o peso trocando de pé.
  * Cada perna sobe um pixel na sua vez, e o corpo acompanha.
  */
-function humanoideFrente(quadro: number): Pose {
+function humanoideFrente(quadro: number, movimento: Movimento): Deslocamento {
   const esquerda = quadro === 1
   const direita = quadro === 3
-  const sobe = esquerda || direita ? -1 : 0
-  return {
-    pernas: {
-      pernasDe: 0,
-      faixas: [{ dy: esquerda ? -2 : 0 }, { dy: direita ? -2 : 0 }],
-    },
-    bracos: {
-      pernasDe: 0,
-      faixas: [{ dy: direita ? -1 : 0 }, { dy: esquerda ? -1 : 0 }],
-    },
-    peito: { dy: sobe },
-    roupa: { dy: sobe },
-    cabeca: { dy: sobe },
-    olhos: { dy: sobe },
-    boca: { dy: sobe },
-    cabelo: { dy: sobe },
-    acessorio: { dy: sobe },
+  if (movimento === 'perna') {
+    return { pernasDe: 0, faixas: [{ dy: esquerda ? -2 : 0 }, { dy: direita ? -2 : 0 }] }
   }
+  if (movimento === 'braco') {
+    return { pernasDe: 0, faixas: [{ dy: direita ? -1 : 0 }, { dy: esquerda ? -1 : 0 }] }
+  }
+  return { dy: esquerda || direita ? -1 : 0 }
 }
 
 /**
  * De perfil a perna da frente e a de trás vão em sentidos opostos, e o braço
- * faz o contrário da perna. A calça acompanha as pernas.
+ * faz o contrário da perna. Parte com passada (a calça) acompanha as pernas.
  */
-function humanoideLado(quadro: number, passadas: Passadas): Pose {
+function humanoideLado(quadro: number, movimento: Movimento, passada?: Passada): Deslocamento {
   const passo = [0, 2, 0, -2][quadro] ?? 0
   const sobe = quadro % 2 === 1 ? -1 : 0
-  const calca = passadas.roupa
-  return {
-    pernas: { pernasDe: 0, faixas: [{ dx: passo }], eco: { dx: -passo } },
-    bracos: { dx: -passo, dy: sobe },
-    peito: { dy: sobe },
-    // a perna da calça sobe junto com o quadril, para não abrir fresta
-    roupa: calca
-      ? { dy: sobe, pernasDe: calca.de, faixas: [{ dx: passo }], eco: { dx: -passo } }
-      : { dy: sobe },
-    cabeca: { dy: sobe },
-    olhos: { dy: sobe },
-    boca: { dy: sobe },
-    cabelo: { dy: sobe },
-    acessorio: { dy: sobe },
-  }
+  if (movimento === 'perna') return { pernasDe: 0, faixas: [{ dx: passo }], eco: { dx: -passo } }
+  if (movimento === 'braco') return { dx: -passo, dy: sobe }
+  // a perna da calça sobe junto com o quadril, para não abrir fresta
+  return passada
+    ? { dy: sobe, pernasDe: passada.de, faixas: [{ dx: passo }], eco: { dx: -passo } }
+    : { dy: sobe }
 }
 
 /** A criatura é um desenho só: só as patas se mexem, e o corpo balança. */
-function criatura(quadro: number, vista: Vista, altura: number, passada?: Passada): Pose {
+function criatura(quadro: number, vista: Vista, altura: number, passada?: Passada): Deslocamento {
   // de perfil o corpo não balança: se ele sobe e a pata não, abre uma fresta
   // entre os dois
   const sobe = quadro % 2 === 1 && !(vista === 'lado' && passada) ? -1 : 0
@@ -111,42 +98,54 @@ function criatura(quadro: number, vista: Vista, altura: number, passada?: Passad
       const vez = (i % 2 === 0 && quadro === 1) || (i % 2 === 1 && quadro === 3)
       return vez ? { dx: i % 2 === 0 ? -1 : 1, dy: -sobe - 1 } : { dy: -sobe }
     })
-    return { corpo: { dy: sobe, pernasDe: passada.de, cortes: passada.cortes, faixas } }
+    return { dy: sobe, pernasDe: passada.de, cortes: passada.cortes, faixas }
   }
 
   if (vista === 'lado' && passada) {
     return {
-      corpo: {
-        dy: sobe,
-        pernasDe: passada.de,
-        faixas: [{ dx: passo * 2, dy: -sobe }],
-        eco: { dx: -passo * 2, dy: -sobe },
-      },
+      dy: sobe,
+      pernasDe: passada.de,
+      faixas: [{ dx: passo * 2, dy: -sobe }],
+      eco: { dx: -passo * 2, dy: -sobe },
     }
   }
 
   return {
-    corpo: {
-      dy: sobe,
-      pernasDe: Math.max(0, altura - LINHAS_DE_PATA),
-      faixas: [{ dx: passo }, { dx: -passo }],
-    },
+    dy: sobe,
+    pernasDe: Math.max(0, altura - LINHAS_DE_PATA),
+    faixas: [{ dx: passo }, { dx: -passo }],
   }
 }
 
 /**
- * Pose de um quadro. `quadro` -1 é o avatar parado.
- * `alturaCorpo` é a altura da matriz da criatura, ignorada no humanoide.
+ * Pose de um quadro, por tipo de parte. `quadro` -1 é o avatar parado.
+ * Na criatura, o que não é `bicho` sobe e desce com o balanço do corpo.
  */
 export function pose(
   tipo: 'humanoide' | 'criatura',
   vista: Vista,
   quadro: number,
-  alturaCorpo = 0,
+  tipos: readonly TipoAnimado[],
   passadas: Passadas = {},
 ): Pose {
   if (quadro < 0) return PARADO
   const q = ((quadro % QUADROS) + QUADROS) % QUADROS
-  if (tipo === 'criatura') return criatura(q, vista, alturaCorpo, passadas.corpo)
-  return vista === 'lado' ? humanoideLado(q, passadas) : humanoideFrente(q)
+  const resultado: Record<string, Deslocamento> = {}
+
+  if (tipo === 'criatura') {
+    const bicho = tipos.find((t) => t.movimento === 'bicho')
+    const corpo = criatura(q, vista, bicho?.altura ?? 0, bicho && passadas[bicho.nome])
+    for (const t of tipos) {
+      resultado[t.nome] = t === bicho ? corpo : { dy: corpo.dy }
+    }
+    return resultado
+  }
+
+  for (const t of tipos) {
+    resultado[t.nome] =
+      vista === 'lado'
+        ? humanoideLado(q, t.movimento, passadas[t.nome])
+        : humanoideFrente(q, t.movimento)
+  }
+  return resultado
 }

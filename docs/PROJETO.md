@@ -170,6 +170,22 @@ espelhado na hora do `drawImage`.
 - A boca aberta não é mais opção de skin: só aparece enquanto há balão.
 - Nome menor, sem negrito. Balão menor e sempre na mesma altura.
 
+### Editor de partes (volta à Etapa 1, 29/10/2026)
+- As partes saíram do código: agora ficam em `src/sprites/dados/humanoide.json`
+  e `criatura.json`, com os tipos, as caixas, o slot de cor e o movimento de
+  cada tipo. A ordem dos tipos no JSON é a ordem de desenho.
+- `editor.html` (só no `npm run dev`, fora do build) desenha e ajusta as
+  partes com prévia ao vivo, parado e andando. Também cria partes e tipos
+  novos (sapato, objeto na mão...). O botão Salvar grava o JSON pelo
+  servidor do Vite; o commit continua manual.
+- Cada tipo tem um `movimento`: `corpo`, `perna`, `braco` ou `bicho`. A
+  animação segue o movimento, não o nome do tipo. De perfil, tudo que é
+  `braco` fica por cima da roupa.
+- Skin que não tem um tipo novo usa a parte 0 dele. Por isso tipo novo nasce
+  com a parte "nenhum".
+- Conferido na migração: 160 bonecos em 20 poses cada saem com os pixels
+  idênticos aos de antes.
+
 ### O que falta saber antes da Etapa 3
 Nada bloqueando. O adaptador de chat entra em `src/main.ts`, chamando
 `cena.entrar()` e `avatar.falar()` — a cena já está pronta para receber.

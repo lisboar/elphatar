@@ -1,5 +1,5 @@
-import { catalogo, validarCatalogo, type TipoCorpo } from '../sprites/catalogo'
-import { GRADE, slotDaParte, type Slot, type Vista } from '../sprites/molde'
+import { CORPOS, tiposDo, validarCatalogo } from '../sprites/catalogo'
+import { GRADE, type Slot, type Vista } from '../sprites/molde'
 import { paletas } from '../sprites/paletas'
 import { MARGEM, desenharParte, desenharSkin, spriteDaSkin } from '../sprites/render'
 import { comCor, comParte, skinAleatoria, type Skin } from '../sprites/skin'
@@ -116,7 +116,7 @@ function montarControles(): void {
   controles.textContent = ''
   atualizadores.length = 0
 
-  const tipos: TipoCorpo[] = ['humanoide', 'criatura']
+  const tipos = CORPOS
   const corpoSel = seletor(
     'corpo',
     () => skin.tipo,
@@ -131,19 +131,16 @@ function montarControles(): void {
   controles.append(corpoSel.linha)
   atualizadores.push(corpoSel.atualizar)
 
-  for (const tipo of Object.keys(catalogo[skin.tipo])) {
-    const lista = catalogo[skin.tipo][
-      tipo as keyof (typeof catalogo)[typeof skin.tipo]
-    ] as readonly { nome: string }[]
+  for (const { nome: tipo, partes: lista } of tiposDo(skin.tipo)) {
     const s = seletor(
       tipo,
       () => {
-        const i = skin.partes[tipo as keyof typeof skin.partes] ?? 0
+        const i = (skin.partes[tipo] ?? 0) % lista.length
         return `${i + 1}/${lista.length} ${lista[i]!.nome}`
       },
       null,
       (passo) => {
-        const i = skin.partes[tipo as keyof typeof skin.partes] ?? 0
+        const i = skin.partes[tipo] ?? 0
         skin = comParte(skin, tipo, i + passo)
       },
     )
@@ -153,12 +150,9 @@ function montarControles(): void {
 
   // Só as cores que este tipo de corpo usa. Criatura e acessório têm cor fixa.
   const slotsEmUso = new Set<Slot>()
-  for (const tipo of Object.keys(catalogo[skin.tipo])) {
-    const lista = catalogo[skin.tipo][
-      tipo as keyof (typeof catalogo)[typeof skin.tipo]
-    ] as readonly { fixa?: string }[]
-    if (lista.every((p) => p.fixa)) continue
-    slotsEmUso.add(slotDaParte[tipo as keyof typeof slotDaParte])
+  for (const tipo of tiposDo(skin.tipo)) {
+    if (tipo.partes.every((p) => p.fixa)) continue
+    slotsEmUso.add(tipo.slot)
   }
 
   for (const slot of slotsEmUso) {
@@ -231,16 +225,12 @@ function redesenhar(): void {
 /* ---------- todas as partes, isoladas ---------- */
 
 function montarCatalogoVisual(): void {
-  for (const tipoCorpo of ['humanoide', 'criatura'] as TipoCorpo[]) {
+  for (const tipoCorpo of CORPOS) {
     raiz!.append(elemento('h2', undefined, `partes — ${tipoCorpo}`))
     const grade = elemento('div', 'grade')
     const base = skinAleatoria(tipoCorpo)
 
-    for (const tipo of Object.keys(catalogo[tipoCorpo])) {
-      const lista = catalogo[tipoCorpo][
-        tipo as keyof (typeof catalogo)[typeof tipoCorpo]
-      ] as readonly { nome: string }[]
-
+    for (const { nome: tipo, partes: lista } of tiposDo(tipoCorpo)) {
       lista.forEach((parte, i) => {
         const item = elemento('div', 'item')
         const par = elemento('div', 'par')

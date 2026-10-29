@@ -1,28 +1,71 @@
 import {
-  moldeCriatura,
-  moldeHumanoide,
+  CARACTERES,
   type Caixa,
+  type DadosCorpo,
   type Matriz,
   type Parte,
+  type TipoParte,
 } from './molde'
-import { partesHumanoide } from './partes/humanoide'
-import { partesCriatura } from './partes/criatura'
+import humanoide from './dados/humanoide.json'
+import criatura from './dados/criatura.json'
 
-export const catalogo = {
-  humanoide: partesHumanoide,
-  criatura: partesCriatura,
-} as const
+export type TipoCorpo = 'humanoide' | 'criatura'
 
-export type TipoCorpo = keyof typeof catalogo
+export const CORPOS: readonly TipoCorpo[] = ['humanoide', 'criatura']
 
-const CARACTERES = new Set(['.', 'k', 'w', 's', '1', '2', '3', 'a', 'b', 'c', 'd', 'e', 'f'])
+/**
+ * O catálogo vem dos JSON de `dados/`. Ele é trocável em tempo de execução:
+ * o Editor troca os dados a cada pincelada (preview ao vivo), e o servidor
+ * de desenvolvimento troca quando o JSON é salvo, sem recarregar a página.
+ */
+const dados: Record<TipoCorpo, DadosCorpo> = {
+  humanoide: humanoide as unknown as DadosCorpo,
+  criatura: criatura as unknown as DadosCorpo,
+}
 
-function conferir(
-  erros: string[],
-  rotulo: string,
-  caixa: Caixa,
-  matriz: Matriz,
-): void {
+const ouvintes = new Set<() => void>()
+
+/** Avisa quando o catálogo muda. O render usa para limpar o cache de sprites. */
+export function aoMudarCatalogo(fn: () => void): void {
+  ouvintes.add(fn)
+}
+
+export function definirDados(corpo: TipoCorpo, novos: DadosCorpo): void {
+  dados[corpo] = novos
+  for (const fn of ouvintes) fn()
+}
+
+export function dadosDo(corpo: TipoCorpo): DadosCorpo {
+  return dados[corpo]
+}
+
+/** Os tipos de parte do corpo, na ordem de desenho. */
+export function tiposDo(corpo: TipoCorpo): readonly TipoParte[] {
+  return dados[corpo].tipos
+}
+
+export function tipoDo(corpo: TipoCorpo, nome: string): TipoParte | undefined {
+  return dados[corpo].tipos.find((t) => t.nome === nome)
+}
+
+export function partesDo(corpo: TipoCorpo, tipo: string): readonly Parte[] {
+  return tipoDo(corpo, tipo)?.partes ?? []
+}
+
+export function especial(corpo: TipoCorpo, nome: string): Parte | undefined {
+  return dados[corpo].especiais?.[nome]
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept(['./dados/humanoide.json', './dados/criatura.json'], ([h, c]) => {
+    if (h) definirDados('humanoide', h.default as DadosCorpo)
+    if (c) definirDados('criatura', c.default as DadosCorpo)
+  })
+}
+
+const VALIDOS = new Set<string>(CARACTERES)
+
+function conferir(erros: string[], rotulo: string, caixa: Caixa, matriz: Matriz): void {
   if (matriz.length !== caixa.altura) {
     erros.push(`${rotulo}: tem ${matriz.length} linhas, a caixa pede ${caixa.altura}`)
   }
@@ -31,7 +74,7 @@ function conferir(
       erros.push(`${rotulo}: linha ${i} tem ${linha.length} colunas, a caixa pede ${caixa.largura}`)
     }
     for (const c of linha) {
-      if (!CARACTERES.has(c)) erros.push(`${rotulo}: linha ${i} usa caractere invalido "${c}"`)
+      if (!VALIDOS.has(c)) erros.push(`${rotulo}: linha ${i} usa caractere invalido "${c}"`)
     }
   })
 }
@@ -39,25 +82,19 @@ function conferir(
 /**
  * Confere que toda matriz, nas duas vistas, cabe exatamente na caixa do seu
  * tipo de parte. É isso que garante que qualquer combinação se encaixe.
- * Chamado no Laboratório e no overlay com ?debug=1.
+ * Chamado no Laboratório, no Editor e no overlay com ?debug=1.
  */
 export function validarCatalogo(): string[] {
   const erros: string[] = []
 
-  for (const [tipo, partes] of Object.entries(catalogo.humanoide)) {
-    const caixa = moldeHumanoide[tipo as keyof typeof moldeHumanoide]
-    partes.forEach((p: Parte) => {
-      conferir(erros, `humanoide/${tipo}/${p.nome}/frente`, caixa, p.frente)
-      conferir(erros, `humanoide/${tipo}/${p.nome}/lado`, caixa, p.lado)
-    })
-  }
-
-  for (const [tipo, partes] of Object.entries(catalogo.criatura)) {
-    const caixa = moldeCriatura[tipo as keyof typeof moldeCriatura]
-    partes.forEach((p: Parte) => {
-      conferir(erros, `criatura/${tipo}/${p.nome}/frente`, caixa, p.frente)
-      conferir(erros, `criatura/${tipo}/${p.nome}/lado`, caixa, p.lado)
-    })
+  for (const corpo of CORPOS) {
+    for (const tipo of dados[corpo].tipos) {
+      if (tipo.partes.length === 0) erros.push(`${corpo}/${tipo.nome}: nenhuma parte`)
+      for (const p of tipo.partes) {
+        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/frente`, tipo.caixa, p.frente)
+        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/lado`, tipo.caixa, p.lado)
+      }
+    }
   }
 
   return erros

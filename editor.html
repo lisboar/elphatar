@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Editor de Partes</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --rosa: #ff4fb0;
+        --rosa-claro: #ffd6ef;
+        --escuro: #140a12;
+        --painel: #1f1320;
+        --borda: #3a2238;
+        --campo: #170e18;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--escuro);
+        color: var(--rosa-claro);
+        font: 13px/1.4 system-ui, -apple-system, sans-serif;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        padding: 4px 9px;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        background: #2a1a2b;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      button:hover {
+        border-color: var(--rosa);
+        color: #fff;
+      }
+      button.ativo {
+        border-color: var(--rosa);
+        background: #4a1d3d;
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      input,
+      select {
+        padding: 3px 6px;
+        border: 1px solid var(--borda);
+        border-radius: 5px;
+        background: var(--campo);
+      }
+      input[type='number'] {
+        width: 56px;
+      }
+      input[type='color'] {
+        width: 36px;
+        height: 24px;
+        padding: 1px;
+      }
+      h2 {
+        margin: 14px 0 6px;
+        font-size: 11px;
+        color: var(--rosa);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      h2:first-child {
+        margin-top: 0;
+      }
+
+      .topo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--borda);
+        background: var(--painel);
+      }
+      .topo h1 {
+        margin: 0 12px 0 0;
+        font-size: 16px;
+        color: var(--rosa);
+      }
+      .topo .espaco {
+        flex: 1;
+      }
+      .status {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      .status.erro {
+        color: #ff8a8a;
+        opacity: 1;
+      }
+      .sujo::after {
+        content: ' •';
+        color: var(--rosa);
+      }
+      #salvar {
+        padding: 6px 16px;
+        border-color: var(--rosa);
+      }
+
+      .area {
+        display: grid;
+        grid-template-columns: 230px auto minmax(360px, 1fr);
+        gap: 16px;
+        padding: 16px;
+        align-items: start;
+      }
+      .coluna {
+        min-width: 0;
+      }
+
+      .lista {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        max-height: 34vh;
+        overflow-y: auto;
+        padding-right: 4px;
+      }
+      .lista button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-align: left;
+        width: 100%;
+      }
+      .lista .dica {
+        margin-left: auto;
+        font-size: 11px;
+        opacity: 0.5;
+      }
+      .lista canvas {
+        flex: 0 0 auto;
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        image-rendering: pixelated;
+        background: #120a11;
+        border-radius: 4px;
+      }
+      .botoes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 6px;
+      }
+
+      .ferramentas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 8px;
+        max-width: 580px;
+      }
+      .ferramentas .sep {
+        width: 1px;
+        align-self: stretch;
+        background: var(--borda);
+        margin: 0 2px;
+      }
+      .tintas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 10px;
+        max-width: 580px;
+      }
+      .tinta {
+        width: 40px;
+        padding: 3px 0 2px;
+        text-align: center;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+      }
+      .tinta span {
+        display: block;
+        height: 18px;
+        margin: 0 4px 2px;
+        border: 1px solid var(--borda);
+        border-radius: 3px;
+      }
+      .tinta .vazio {
+        background: repeating-conic-gradient(#3a2238 0 25%, #1a1019 0 50%) 0 0 / 8px 8px;
+      }
+      .quadro {
+        display: block;
+        cursor: crosshair;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        image-rendering: pixelated;
+        touch-action: none;
+        background: repeating-conic-gradient(#221522 0 25%, #1a101a 0 50%) 0 0 / 16px 16px;
+      }
+      .coord {
+        margin-top: 4px;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+        opacity: 0.6;
+        min-height: 16px;
+      }
+
+      .previa {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--borda);
+        border-radius: 10px;
+        background: repeating-conic-gradient(#221522 0 25%, #1a101a 0 50%) 0 0 / 16px 16px;
+      }
+      .previa canvas,
+      .aleatorias canvas {
+        display: block;
+        image-rendering: pixelated;
+      }
+      .previa .rotulo {
+        text-align: center;
+        font-size: 10px;
+        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .aleatorias {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 6px;
+      }
+      .aleatorias > div {
+        display: flex;
+        justify-content: center;
+        padding: 4px;
+        border: 1px solid var(--borda);
+        border-radius: 8px;
+        background: var(--painel);
+      }
+
+      .campos {
+        display: grid;
+        grid-template-columns: 92px 1fr;
+        gap: 5px 8px;
+        align-items: center;
+      }
+      .campos > span {
+        font-size: 11px;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .campos > div {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .nota {
+        margin: 6px 0 0;
+        font-size: 11px;
+        opacity: 0.55;
+      }
+      .erros {
+        margin: 0 16px;
+        padding: 8px 12px;
+        border: 1px solid #ff5c5c;
+        border-radius: 8px;
+        background: #2a1216;
+        color: #ffb3b3;
+        white-space: pre-wrap;
+        font-family: ui-monospace, monospace;
+        font-size: 11px;
+      }
+      .erros:empty {
+        display: none;
+      }
+      .atalhos {
+        font-size: 11px;
+        opacity: 0.5;
+        margin-top: 10px;
+        max-width: 580px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="editor"></div>
+    <script type="module" src="/src/editor/main.ts"></script>
+  </body>
+</html>

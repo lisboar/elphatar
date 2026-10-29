@@ -1,9 +1,12 @@
 /**
  * O molde: a grade fixa onde todas as partes são desenhadas.
  *
- * Cada tipo de parte tem uma caixa com posição e tamanho definidos aqui.
- * Uma matriz de parte precisa ter exatamente o tamanho da sua caixa — é isso
- * que garante que qualquer combinação de partes se encaixe sem ajuste manual.
+ * Cada tipo de parte tem uma caixa com posição e tamanho. Uma matriz de parte
+ * precisa ter exatamente o tamanho da sua caixa — é isso que garante que
+ * qualquer combinação de partes se encaixe sem ajuste manual.
+ *
+ * Os tipos, as caixas e as partes ficam em `dados/*.json`, editados pelo
+ * Editor (`editor.html`, só no `npm run dev`). Aqui ficam só as regras.
  *
  * Cada parte tem duas matrizes: `frente` e `lado`. O lado esquerdo não é
  * desenhado: é o `lado` espelhado na hora de rasterizar.
@@ -26,8 +29,12 @@ export const ESCALA = 3
  */
 export type Matriz = readonly string[]
 
+export const CARACTERES = ['.', 'k', 'w', 's', '1', '2', '3', 'a', 'b', 'c', 'd', 'e', 'f'] as const
+
 /** De qual cor da skin a parte se pinta, quando não tem cor fixa. */
 export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos' | 'criatura'
+
+export const SLOTS: readonly Slot[] = ['pele', 'cabelo', 'roupa', 'olhos', 'criatura']
 
 export interface Caixa {
   readonly x: number
@@ -55,12 +62,6 @@ export interface Parte {
   /** Cor dos caracteres `d` `e` `f`. */
   readonly extra2?: string
   /**
-   * Só para corpos de criatura: onde fica o topo da cabeça dela, para o
-   * acessório pousar no lugar certo em bicho alto e em bicho baixo.
-   */
-  readonly semAcessorio?: boolean
-  readonly ancoraAcessorio?: { readonly x: number; readonly y: number }
-  /**
    * Como a parte anda de perfil. A partir da linha `de`, a matriz é perna.
    * Com `cortes`, as colunas viram faixas (uma por perna) que andam em
    * contrafase. Sem `cortes`, o desenho tem uma perna só, e a de trás é uma
@@ -74,50 +75,35 @@ export interface Passada {
   readonly cortes?: readonly number[]
 }
 
-export type TipoParteHumanoide =
-  | 'pernas'
-  | 'peito'
-  | 'bracos'
-  | 'roupa'
-  | 'cabeca'
-  | 'olhos'
-  | 'boca'
-  | 'cabelo'
-  | 'acessorio'
+/**
+ * Como um tipo de parte se mexe na caminhada:
+ * - `corpo` sobe e desce junto com o tronco (cabeça, roupa, chapéu)
+ * - `perna` segue as pernas (sapato)
+ * - `braco` segue os braços (objeto na mão); de perfil fica por cima da roupa
+ * - `bicho` é a criatura inteira: as patas andam, o corpo balança
+ */
+export type Movimento = 'corpo' | 'perna' | 'braco' | 'bicho'
 
-export type TipoParteCriatura = 'corpo'
+export const MOVIMENTOS: readonly Movimento[] = ['corpo', 'perna', 'braco', 'bicho']
 
-/** Caixas do humanoide. A ordem das chaves é a ordem de desenho (de trás pra frente). */
-export const moldeHumanoide: Record<TipoParteHumanoide, Caixa> = {
-  pernas: { x: 15, y: 35, largura: 18, altura: 13 },
-  peito: { x: 11, y: 23, largura: 26, altura: 14 },
-  // braços antes da roupa: é o que deixa a manga curta aparecer por cima
-  bracos: { x: 8, y: 23, largura: 32, altura: 18 },
-  roupa: { x: 11, y: 23, largura: 26, altura: 24 },
-  cabeca: { x: 14, y: 3, largura: 20, altura: 21 },
-  olhos: { x: 17, y: 12, largura: 14, altura: 7 },
-  boca: { x: 19, y: 18, largura: 10, altura: 4 },
-  cabelo: { x: 11, y: 0, largura: 26, altura: 34 },
-  acessorio: { x: 4, y: 0, largura: 40, altura: 34 },
+export interface TipoParte {
+  /** Nome do tipo, usado na skin e nos comandos (`!parte <tipo> <n>`). */
+  readonly nome: string
+  readonly caixa: Caixa
+  readonly slot: Slot
+  readonly movimento: Movimento
+  readonly partes: readonly Parte[]
 }
 
-/** Caixas da criatura. Cada criatura é um desenho só, com olhos e cores próprios. */
-export const moldeCriatura: Record<TipoParteCriatura, Caixa> = {
-  corpo: { x: 4, y: 4, largura: 40, altura: 44 },
-}
-
-/** Qual slot de cor cada tipo de parte usa, quando a parte não tem cor fixa. */
-export const slotDaParte: Record<TipoParteHumanoide | TipoParteCriatura, Slot> = {
-  pernas: 'pele',
-  peito: 'pele',
-  cabeca: 'pele',
-  bracos: 'pele',
-  boca: 'pele',
-  roupa: 'roupa',
-  olhos: 'olhos',
-  cabelo: 'cabelo',
-  acessorio: 'pele',
-  corpo: 'criatura',
+/**
+ * Tudo de um tipo de corpo. A ordem de `tipos` é a ordem de desenho, de trás
+ * pra frente — por isso o braço vem antes da roupa: é o que deixa a manga
+ * curta aparecer por cima.
+ */
+export interface DadosCorpo {
+  readonly tipos: readonly TipoParte[]
+  /** Partes fora da escolha do viewer, como a boca aberta da fala. */
+  readonly especiais?: Readonly<Record<string, Parte>>
 }
 
 /** Matriz vazia do tamanho de uma caixa. Para a opção "nenhum". */
