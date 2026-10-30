@@ -1032,8 +1032,50 @@ avancado.append(
   tipoEl,
 )
 
+/**
+ * Fundo das prévias. Os claros mostram pixel sobrando fora do contorno, que
+ * no xadrez escuro some.
+ */
+const FUNDOS: { nome: string; css: string }[] = [
+  { nome: 'xadrez escuro', css: 'repeating-conic-gradient(#221522 0 25%, #1a101a 0 50%) 0 0 / 16px 16px' },
+  { nome: 'xadrez claro', css: 'repeating-conic-gradient(#ffffff 0 25%, #d9d9d9 0 50%) 0 0 / 16px 16px' },
+  { nome: 'branco', css: '#ffffff' },
+  { nome: 'cinza claro', css: '#c8c8c8' },
+  { nome: 'amarelo', css: '#fff27a' },
+  { nome: 'verde', css: '#00d26a' },
+  { nome: 'azul', css: '#3fa8ff' },
+  { nome: 'preto', css: '#000000' },
+]
+const CHAVE_FUNDO = 'editor.fundo'
+const fundosEl = el('div', 'botoes fundos')
+const botoesFundo = FUNDOS.map((f, i) => {
+  const b = botao('', () => usarFundo(i), f.nome)
+  b.style.background = f.css
+  fundosEl.append(b)
+  return b
+})
+
+function usarFundo(i: number): void {
+  document.documentElement.style.setProperty('--fundo-previa', FUNDOS[i]!.css)
+  botoesFundo.forEach((b, j) => b.classList.toggle('ativo', i === j))
+  try {
+    localStorage.setItem(CHAVE_FUNDO, String(i))
+  } catch {
+    // sem storage o fundo só não é lembrado
+  }
+}
+
+let fundoSalvo = 0
+try {
+  fundoSalvo = Number(localStorage.getItem(CHAVE_FUNDO)) || 0
+} catch {
+  // idem
+}
+usarFundo(fundoSalvo < FUNDOS.length ? fundoSalvo : 0)
+
 colDir.append(
   el('h2', undefined, 'Como fica no overlay'),
+  fundosEl,
   previa,
   el('h2', undefined, 'Esta parte'),
   parteEl,

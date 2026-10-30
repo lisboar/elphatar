@@ -13,6 +13,7 @@
         --painel: #1f1320;
         --borda: #3a2238;
         --campo: #170e18;
+        --fundo-previa: repeating-conic-gradient(#221522 0 25%, #1a101a 0 50%) 0 0 / 16px 16px;
       }
       * {
         box-sizing: border-box;
@@ -260,7 +261,15 @@
         padding: 10px;
         border: 1px solid var(--borda);
         border-radius: 10px;
-        background: repeating-conic-gradient(#221522 0 25%, #1a101a 0 50%) 0 0 / 16px 16px;
+        background: var(--fundo-previa);
+      }
+      .fundos {
+        margin: 0 0 8px;
+      }
+      .fundos button {
+        width: 26px;
+        height: 22px;
+        padding: 0;
       }
       .previa canvas,
       .aleatorias canvas {
@@ -270,7 +279,9 @@
       .previa .rotulo {
         text-align: center;
         font-size: 10px;
-        opacity: 0.6;
+        opacity: 0.85;
+        /* legível em fundo claro e escuro */
+        text-shadow: 0 0 2px #000, 0 0 3px #000;
         text-transform: uppercase;
         letter-spacing: 0.05em;
       }
@@ -285,7 +296,7 @@
         padding: 4px;
         border: 1px solid var(--borda);
         border-radius: 8px;
-        background: var(--painel);
+        background: var(--fundo-previa);
       }
 
       .campos {
