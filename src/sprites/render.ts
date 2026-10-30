@@ -1,6 +1,7 @@
 import {
   ESCALA,
   GRADE,
+  LIVRES,
   type Caixa,
   type Matriz,
   type Parte,
@@ -31,6 +32,8 @@ interface Cores {
   readonly principal: Rampa
   readonly extra1: Rampa | null
   readonly extra2: Rampa | null
+  /** As cores livres, já resolvidas: `livres[i]` pinta `LIVRES[i]`. */
+  readonly livres: readonly string[]
 }
 
 function corDoCaractere(c: string, cores: Cores): string | null {
@@ -59,8 +62,10 @@ function corDoCaractere(c: string, cores: Cores): string | null {
       return cores.extra2?.sombra ?? cores.principal.sombra
     case 'f':
       return cores.extra2?.luz ?? cores.principal.luz
-    default:
+    case '1':
       return cores.principal.base
+    default:
+      return cores.livres[LIVRES.indexOf(c)] ?? cores.principal.base
   }
 }
 
@@ -137,6 +142,7 @@ function desenharMatriz(
       principal: escurecer(cores.principal)!,
       extra1: escurecer(cores.extra1),
       extra2: escurecer(cores.extra2),
+      livres: cores.livres.map((h) => rampa(h).sombra),
     }
     pintar(ctx, matriz, caixa, escuro, escala, { ...pernas, colunaDe: 0, colunaAte: largura },
       dx + (desl.eco.dx ?? 0), dy + (desl.eco.dy ?? 0))
@@ -162,14 +168,15 @@ function desenharMatriz(
 function coresDaParte(parte: Parte, skin: Skin, slot: Slot): Cores {
   const extra1 = parte.extra1 ? rampa(parte.extra1) : null
   const extra2 = parte.extra2 ? rampa(parte.extra2) : null
+  const livres = parte.paleta ?? []
 
   if (parte.fixa) {
-    return { principal: rampa(parte.fixa), extra1, extra2 }
+    return { principal: rampa(parte.fixa), extra1, extra2, livres }
   }
 
   const paleta = paletas[slot]
   const hex = paleta[skin.cores[slot] % paleta.length]!.hex
-  return { principal: rampa(hex), extra1, extra2 }
+  return { principal: rampa(hex), extra1, extra2, livres }
 }
 
 /** A cor real de um caractere da matriz, com a skin aplicada. Usado no Editor. */

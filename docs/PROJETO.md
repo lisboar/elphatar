@@ -186,6 +186,15 @@ espelhado na hora do `drawImage`.
 - Conferido na migração: 160 bonecos em 20 poses cada saem com os pixels
   idênticos aos de antes.
 
+### Editor: paleta, pincel e caminhada (30/10/2026)
+- Cada parte pode ter `paleta`: até 12 cores livres e fixas, pintadas com as
+  letras `A` a `L`. Não mudam com a skin e não ganham sombra nem luz; o
+  Acabamento só põe contorno em volta delas. A forma (`1`) continua sendo a
+  cor do viewer.
+- Pincel com ponta de 1 a 4 px. Conta-gotas pega a cor uma vez e volta para
+  a ferramenta anterior.
+- A passada (linha das patas e cortes) é marcada clicando no quadro, de perfil.
+
 ### O que falta saber antes da Etapa 3
 Nada bloqueando. O adaptador de chat entra em `src/main.ts`, chamando
 `cena.entrar()` e `avatar.falar()` — a cena já está pronta para receber.

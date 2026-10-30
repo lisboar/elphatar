@@ -9,6 +9,7 @@ import {
 import {
   CARACTERES,
   GRADE,
+  LIVRES,
   MOVIMENTOS,
   SLOTS,
   vazia,
@@ -42,6 +43,7 @@ interface ParteEd {
   fixa?: string
   extra1?: string
   extra2?: string
+  paleta?: string[]
   passada?: { de: number; cortes?: number[] }
 }
 
@@ -77,8 +79,14 @@ let iTipo = 0
 /** Índice da parte no tipo, ou a chave de uma parte especial. */
 let sel: number | string = 0
 let vista: Vista = 'frente'
-type Ferramenta = 'lapis' | 'balde' | 'conta'
+/** `linha` e `corte` marcam a passada: onde começam as patas e onde elas se separam. */
+type Ferramenta = 'lapis' | 'pincel' | 'balde' | 'conta' | 'linha' | 'corte'
 let ferramenta: Ferramenta = 'lapis'
+/** Para onde o conta-gotas volta depois de pegar a cor. */
+let anterior: Ferramenta = 'lapis'
+/** Lado do pincel, em pixels da arte. */
+let ponta = 2
+const PONTAS = [1, 2, 3, 4]
 let tinta = '1'
 let espelho = false
 let camadas = true
@@ -295,10 +303,29 @@ const coord = el('div', 'coord')
 colMeio.append(ferramentasEl, tintasEl, quadro, coord)
 
 const botoesFerramenta: Record<Ferramenta, HTMLButtonElement> = {
-  lapis: botao('✏ Lápis', () => usar('lapis'), 'P'),
+  lapis: botao('✏ Lápis', () => usar('lapis'), 'P — 1 pixel'),
+  pincel: botao('🖌 Pincel', () => usar('pincel'), 'B — tamanho na ponta ao lado ([ e ] trocam)'),
   balde: botao('🪣 Balde', () => usar('balde'), 'G'),
-  conta: botao('💧 Conta-gotas', () => usar('conta'), 'I (ou Alt+clique)'),
+  conta: botao('💧 Conta-gotas', () => usar('conta'), 'I (ou Alt+clique) — pega a cor e volta para a ferramenta anterior'),
+  linha: botao('🦶 Linha das patas', () => usar('linha'),
+    'Clique na linha onde as patas começam. De perfil, dali para baixo a matriz anda.'),
+  corte: botao('✂ Corte', () => usar('corte'),
+    'Clique numa coluna para separar (ou juntar de novo) as patas. Cada faixa anda na sua vez.'),
 }
+const botoesPonta = PONTAS.map((n) => {
+  const b = botao(`${n}px`, () => {
+    ponta = n
+    usar('pincel')
+  }, 'ponta do pincel')
+  b.className = 'ponta'
+  return b
+})
+const bSemPassada = botao('sem passada', () => {
+  if (!parte().passada) return
+  lembrar()
+  delete parte().passada
+  mudou(true)
+}, 'tira a linha e os cortes: a parte anda inteira')
 const bEspelho = botao('⇋ Espelho', () => {
   espelho = !espelho
   atualizarFerramentas()
@@ -317,8 +344,14 @@ selZoom.addEventListener('change', () => {
   agendar()
 })
 
+const { linha: bLinha, corte: bCorte, lapis: bLapis, pincel: bPincel, balde: bBalde, conta: bConta } =
+  botoesFerramenta
 ferramentasEl.append(
-  ...Object.values(botoesFerramenta),
+  bLapis,
+  bPincel,
+  ...botoesPonta,
+  bBalde,
+  bConta,
   bEspelho,
   el('div', 'sep'),
   bFrente,
@@ -335,6 +368,10 @@ ferramentasEl.append(
   botao('Lado → Frente', () => copiarVista('lado', 'frente')),
   botao('Limpar', limparVista),
 )
+
+// a caminhada: marcada no quadro, de perfil
+const caminhadaEl = el('div', 'ferramentas')
+caminhadaEl.append(el('span', 'rotulo-barra', 'Caminhada'), bLinha, bCorte, bSemPassada)
 
 const NOMES_TINTA: Record<string, string> = {
   '.': 'vazio',
@@ -381,18 +418,108 @@ tintasEl.append(
   botao('✨ Acabamento (A)', acabamento, 'refaz contorno, sombra e luz nas duas vistas'),
   bRetoque,
 )
-tintasEl.after(retoque)
+
+/* paleta: as cores livres da parte, fixas (não mudam com a skin) */
+
+const paletaEl = el('div', 'tintas')
+const seletorCor = el('input')
+seletorCor.type = 'color'
+seletorCor.title = 'muda a cor selecionada da paleta'
+/** O seletor pode disparar vários `input` seguidos: só o primeiro entra no desfazer. */
+let corEmEdicao = false
+
+const indiceLivre = (c: string): number => LIVRES.indexOf(c)
+
+seletorCor.addEventListener('input', () => {
+  const i = indiceLivre(tinta)
+  const paleta = parte().paleta
+  if (i < 0 || !paleta) return
+  if (!corEmEdicao) {
+    lembrar()
+    corEmEdicao = true
+  }
+  paleta[i] = seletorCor.value
+  mudou()
+})
+seletorCor.addEventListener('change', () => {
+  corEmEdicao = false
+  montarPaleta()
+})
+
+function novaCor(): void {
+  const p = parte()
+  const paleta = p.paleta ?? []
+  if (paleta.length >= LIVRES.length) {
+    alert(`A paleta tem no máximo ${LIVRES.length} cores.`)
+    return
+  }
+  lembrar()
+  paleta.push(seletorCor.value)
+  p.paleta = paleta
+  tinta = LIVRES[paleta.length - 1]!
+  mudou(true)
+  seletorCor.click()
+}
+
+/** Tira a cor da paleta. Os pixels dela viram forma; as cores seguintes descem uma letra. */
+function removerCor(): void {
+  const i = indiceLivre(tinta)
+  const p = parte()
+  if (i < 0 || !p.paleta) return
+  const letra = LIVRES[i]!
+  const usada = [...p.frente, ...p.lado].some((l) => l.includes(letra))
+  if (usada && !confirm('Os pixels desta cor vão virar forma. Remover?')) return
+  lembrar()
+  const trocar = (m: string[]) => m.map((l) => l.replace(/[A-L]/g, (c) => {
+    const j = indiceLivre(c)
+    return j === i ? '1' : j > i ? LIVRES[j - 1]! : c
+  }))
+  p.frente = trocar(p.frente)
+  p.lado = trocar(p.lado)
+  p.paleta.splice(i, 1)
+  if (p.paleta.length === 0) delete p.paleta
+  tinta = '1'
+  mudou(true)
+}
+
+const bRemoverCor = botao('− cor', removerCor, 'tira a cor selecionada da paleta')
+
+function montarPaleta(): void {
+  paletaEl.textContent = ''
+  for (const c of [...botoesTinta.keys()]) if (indiceLivre(c) >= 0) botoesTinta.delete(c)
+  ;(parte().paleta ?? []).forEach((_, i) => {
+    const b = botaoDeTinta(LIVRES[i]!, '', 'tinta cor')
+    b.title = 'clique escolhe · duplo clique muda a cor'
+    b.addEventListener('dblclick', () => seletorCor.click())
+    paletaEl.append(b)
+  })
+  paletaEl.append(
+    botao('+ cor', novaCor, 'nova cor na paleta desta parte'),
+    seletorCor,
+    bRemoverCor,
+  )
+}
+
+colMeio.insertBefore(el('div', 'rotulo-barra', 'Paleta desta parte (cores fixas)'), quadro)
+colMeio.insertBefore(paletaEl, quadro)
+colMeio.insertBefore(retoque, quadro)
+colMeio.insertBefore(caminhadaEl, quadro)
 
 colMeio.append(
   el('div', 'atalhos',
     'Pinte a forma e aperte Acabamento (A). Clique direito apaga. ' +
-      'F forma · E borracha · P lápis · G balde · I conta-gotas · M espelho · V vista · H camadas · ' +
-      'setas movem o desenho · Ctrl+Z / Ctrl+Y · Ctrl+S salva.'),
+      'F forma · E borracha · P lápis · B pincel · [ ] ponta · G balde · I conta-gotas · M espelho · ' +
+      'V vista · H camadas · setas movem o desenho · Ctrl+Z / Ctrl+Y · Ctrl+S salva. ' +
+      'Caminhada: marque a linha onde começam as patas e os cortes entre elas, de perfil.'),
 )
 
 function usar(f: Ferramenta): void {
+  if (f !== 'conta') anterior = f
   ferramenta = f
+  // a passada só existe de perfil
+  if ((f === 'linha' || f === 'corte') && vista !== 'lado') trocarVista('lado')
   atualizarFerramentas()
+  agendar()
 }
 
 function trocarVista(v: Vista): void {
@@ -403,6 +530,14 @@ function trocarVista(v: Vista): void {
 
 function atualizarFerramentas(): void {
   for (const [f, b] of Object.entries(botoesFerramenta)) b.classList.toggle('ativo', f === ferramenta)
+  botoesPonta.forEach((b, i) => {
+    b.classList.toggle('ativo', PONTAS[i] === ponta)
+    b.disabled = ferramenta !== 'pincel'
+  })
+  bSemPassada.disabled = !parte().passada
+  const livre = indiceLivre(tinta)
+  bRemoverCor.disabled = seletorCor.disabled = livre < 0
+  if (livre >= 0 && !corEmEdicao) seletorCor.value = parte().paleta?.[livre] ?? seletorCor.value
   bEspelho.classList.toggle('ativo', espelho)
   bFrente.classList.toggle('ativo', vista === 'frente')
   bLado.classList.toggle('ativo', vista === 'lado')
@@ -509,9 +644,28 @@ function desenharQuadro(): void {
   ctx.strokeStyle = 'rgba(255, 79, 176, 0.9)'
   ctx.strokeRect(cx * zoom + 0.5, cy * zoom + 0.5, largura * zoom - 1, altura * zoom - 1)
 
-  if (mouse) {
-    ctx.strokeStyle = '#fff'
-    ctx.strokeRect(mouse.x * zoom + 0.5, mouse.y * zoom + 0.5, zoom - 1, zoom - 1)
+  if (!mouse) return
+  ctx.strokeStyle = '#fff'
+  if (ferramenta === 'linha') {
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    ctx.moveTo(cx * zoom, mouse.y * zoom + 0.5)
+    ctx.lineTo((cx + largura) * zoom, mouse.y * zoom + 0.5)
+    ctx.stroke()
+    ctx.setLineDash([])
+  } else if (ferramenta === 'corte') {
+    const de = cy + (passada?.de ?? 0)
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    ctx.moveTo(mouse.x * zoom + 0.5, de * zoom)
+    ctx.lineTo(mouse.x * zoom + 0.5, (cy + altura) * zoom)
+    ctx.stroke()
+    ctx.setLineDash([])
+  } else {
+    const n = ferramenta === 'pincel' ? ponta : 1
+    const x0 = mouse.x - Math.floor((n - 1) / 2)
+    const y0 = mouse.y - Math.floor((n - 1) / 2)
+    ctx.strokeRect(x0 * zoom + 0.5, y0 * zoom + 0.5, n * zoom - 1, n * zoom - 1)
   }
 }
 
@@ -542,6 +696,37 @@ function pintar(x: number, y: number, c: string): void {
   if (espelho) porPixel(GRADE - 1 - x, y, c)
 }
 
+/** Um toque da ferramenta: 1 pixel no lápis, um quadrado do tamanho da ponta no pincel. */
+function carimbar(x: number, y: number, c: string): void {
+  const n = ferramenta === 'pincel' ? ponta : 1
+  const x0 = x - Math.floor((n - 1) / 2)
+  const y0 = y - Math.floor((n - 1) / 2)
+  for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) pintar(x0 + dx, y0 + dy, c)
+}
+
+/** Linha onde as patas começam: o clique vira o `de` da passada. */
+function marcarLinha(y: number): void {
+  const { y: cy, altura } = tipo().caixa
+  const de = Math.min(Math.max(y - cy, 1), altura - 1)
+  if (parte().passada?.de === de) return
+  lembrar()
+  parte().passada = { ...parte().passada, de }
+  mudou(true)
+}
+
+/** Corte entre patas: clicar numa coluna cortada junta de novo. */
+function alternarCorte(x: number): void {
+  const { x: cx, altura, largura } = tipo().caixa
+  const c = x - cx
+  if (c < 1 || c > largura - 2) return
+  lembrar()
+  const passada = parte().passada ?? { de: Math.floor(altura * 0.8) }
+  const cortes = passada.cortes ?? []
+  const novos = cortes.includes(c) ? cortes.filter((v) => v !== c) : [...cortes, c].sort((a, b) => a - b)
+  parte().passada = novos.length ? { de: passada.de, cortes: novos } : { de: passada.de }
+  mudou(true)
+}
+
 function balde(x: number, y: number, c: string): void {
   const alvo = lerPixel(x, y)
   if (alvo === null || alvo === c) return
@@ -561,8 +746,18 @@ quadro.addEventListener('contextmenu', (e) => e.preventDefault())
 quadro.addEventListener('pointerdown', (e) => {
   const p = celula(e)
   if (lerPixel(p.x, p.y) === null) return
+  if (ferramenta === 'linha') {
+    if (e.button === 0) marcarLinha(p.y)
+    return
+  }
+  if (ferramenta === 'corte') {
+    if (e.button === 0) alternarCorte(p.x)
+    return
+  }
   if (ferramenta === 'conta' || e.altKey) {
+    // pega uma vez só e volta para o que estava desenhando
     tinta = lerPixel(p.x, p.y)!
+    if (ferramenta === 'conta') usar(anterior)
     atualizarFerramentas()
     return
   }
@@ -575,7 +770,7 @@ quadro.addEventListener('pointerdown', (e) => {
   }
   quadro.setPointerCapture(e.pointerId)
   traco = { ultimo: p, tinta: c }
-  pintar(p.x, p.y, c)
+  carimbar(p.x, p.y, c)
   mudou()
 })
 
@@ -591,7 +786,7 @@ quadro.addEventListener('pointermove', (e) => {
     const { ultimo } = traco
     const passos = Math.max(Math.abs(p.x - ultimo.x), Math.abs(p.y - ultimo.y))
     for (let i = 1; i <= passos; i++) {
-      pintar(
+      carimbar(
         Math.round(ultimo.x + ((p.x - ultimo.x) * i) / passos),
         Math.round(ultimo.y + ((p.y - ultimo.y) * i) / passos),
         traco.tinta,
@@ -622,7 +817,8 @@ const DA_FORMA = new Set(['1', '2', '3', 'k'])
  * - sombra (2) por dentro, na borda de baixo e da direita
  * - luz (3) por dentro, na borda de cima
  * Linha preta solta no meio da forma vira forma. Detalhes de outras tintas
- * (branco, extras) ficam como estão. Rodar duas vezes dá o mesmo resultado.
+ * (branco, extras) ficam como estão; os da paleta só perdem a borda para o
+ * contorno. Rodar duas vezes dá o mesmo resultado.
  */
 function acabar(m: readonly string[]): string[] {
   const g = m.map((l) => l.split(''))
@@ -633,7 +829,9 @@ function acabar(m: readonly string[]): string[] {
   g.forEach((linha, y) => linha.forEach((c, x) => {
     if (c === 'k' && vizinhos(x, y).every((v) => v === '.' || DA_FORMA.has(v))) g[y]![x] = '1'
   }))
-  const borda = g.map((linha, y) => linha.map((c, x) => DA_FORMA.has(c) && vizinhos(x, y).includes('.')))
+  // as cores livres também ganham contorno, mas não sombra nem luz
+  const borda = g.map((linha, y) => linha.map((c, x) =>
+    (DA_FORMA.has(c) || indiceLivre(c) >= 0) && vizinhos(x, y).includes('.')))
   g.forEach((linha, y) => linha.forEach((c, x) => {
     if (borda[y]![x]) linha[x] = 'k'
     else if (c !== 'k' && DA_FORMA.has(c)) linha[x] = '1'
@@ -705,6 +903,7 @@ function novaParte(): void {
   for (const k of ['fixa', 'extra1', 'extra2', 'atras'] as const) {
     if (base[k] !== undefined) (nova as unknown as Record<string, unknown>)[k] = base[k]
   }
+  if (base.paleta) nova.paleta = [...base.paleta]
   tipo().partes.push(nova)
   sel = tipo().partes.length - 1
   mudou(true)
@@ -1120,8 +1319,11 @@ function agendar(): void {
 function mudou(estrutura = false): void {
   definirDados(corpo, dados() as unknown as DadosCorpo)
   if (estrutura) {
+    // tinta da paleta que a parte nova não tem volta para a forma
+    if (indiceLivre(tinta) >= (parte().paleta?.length ?? 0)) tinta = '1'
     montarListas()
     montarPropriedades()
+    montarPaleta()
   } else {
     desenharMiniatura(sel)
   }
@@ -1231,7 +1433,12 @@ window.addEventListener('keydown', (e) => {
     tinta = TINTAS[tecla]!
     atualizarFerramentas()
   } else if (tecla === 'p') usar('lapis')
-  else if (tecla === 'g') usar('balde')
+  else if (tecla === 'b') usar('pincel')
+  else if (tecla === '[' || tecla === ']') {
+    const i = PONTAS.indexOf(ponta) + (tecla === ']' ? 1 : -1)
+    ponta = PONTAS[Math.min(Math.max(i, 0), PONTAS.length - 1)]!
+    usar('pincel')
+  } else if (tecla === 'g') usar('balde')
   else if (tecla === 'a') acabamento()
   else if (tecla === 'i') usar('conta')
   else if (tecla === 'm') {

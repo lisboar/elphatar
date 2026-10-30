@@ -26,10 +26,14 @@ export const ESCALA = 3
  * - `1` `2` `3` base, sombra e luz da cor principal da parte
  * - `a` `b` `c` base, sombra e luz da cor extra 1 da parte
  * - `d` `e` `f` base, sombra e luz da cor extra 2 da parte
+ * - `A` a `L` as cores livres da paleta da parte, na ordem (sem sombra nem luz)
  */
 export type Matriz = readonly string[]
 
 export const CARACTERES = ['.', 'k', 'w', 's', '1', '2', '3', 'a', 'b', 'c', 'd', 'e', 'f'] as const
+
+/** Caracteres das cores livres: `LIVRES[i]` é `paleta[i]` da parte. */
+export const LIVRES = 'ABCDEFGHIJKL'
 
 /** De qual cor da skin a parte se pinta, quando não tem cor fixa. */
 export type Slot = 'pele' | 'cabelo' | 'roupa' | 'olhos' | 'criatura'
@@ -61,6 +65,11 @@ export interface Parte {
   readonly extra1?: string
   /** Cor dos caracteres `d` `e` `f`. */
   readonly extra2?: string
+  /**
+   * Cores livres, fixas: não mudam com a skin. Para os detalhes de uma
+   * criatura (focinho, mancha, olho). Até `LIVRES.length` cores.
+   */
+  readonly paleta?: readonly string[]
   /**
    * Como a parte anda de perfil. A partir da linha `de`, a matriz é perna.
    * Com `cortes`, as colunas viram faixas (uma por perna) que andam em

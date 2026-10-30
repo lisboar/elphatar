@@ -1,5 +1,6 @@
 import {
   CARACTERES,
+  LIVRES,
   type Caixa,
   type DadosCorpo,
   type Matriz,
@@ -65,7 +66,7 @@ if (import.meta.hot) {
 
 const VALIDOS = new Set<string>(CARACTERES)
 
-function conferir(erros: string[], rotulo: string, caixa: Caixa, matriz: Matriz): void {
+function conferir(erros: string[], rotulo: string, caixa: Caixa, matriz: Matriz, livres = 0): void {
   if (matriz.length !== caixa.altura) {
     erros.push(`${rotulo}: tem ${matriz.length} linhas, a caixa pede ${caixa.altura}`)
   }
@@ -74,7 +75,10 @@ function conferir(erros: string[], rotulo: string, caixa: Caixa, matriz: Matriz)
       erros.push(`${rotulo}: linha ${i} tem ${linha.length} colunas, a caixa pede ${caixa.largura}`)
     }
     for (const c of linha) {
-      if (!VALIDOS.has(c)) erros.push(`${rotulo}: linha ${i} usa caractere invalido "${c}"`)
+      if (VALIDOS.has(c)) continue
+      const livre = LIVRES.indexOf(c)
+      if (livre < 0) erros.push(`${rotulo}: linha ${i} usa caractere invalido "${c}"`)
+      else if (livre >= livres) erros.push(`${rotulo}: linha ${i} usa a cor livre "${c}", que a paleta não tem`)
     }
   })
 }
@@ -91,8 +95,9 @@ export function validarCatalogo(): string[] {
     for (const tipo of dados[corpo].tipos) {
       if (tipo.partes.length === 0) erros.push(`${corpo}/${tipo.nome}: nenhuma parte`)
       for (const p of tipo.partes) {
-        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/frente`, tipo.caixa, p.frente)
-        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/lado`, tipo.caixa, p.lado)
+        const livres = p.paleta?.length ?? 0
+        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/frente`, tipo.caixa, p.frente, livres)
+        conferir(erros, `${corpo}/${tipo.nome}/${p.nome}/lado`, tipo.caixa, p.lado, livres)
       }
     }
   }
