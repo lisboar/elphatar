@@ -108,10 +108,11 @@ Cada etapa termina com o "ok" do Thainã.
 
 ---
 
-## Onde estamos (atualizado em 28/10/2026)
+## Onde estamos (atualizado em 31/10/2026)
 
-**Etapas 0, 1 e 2 concluídas.** Etapa 3 (chat real da Twitch) com o código
-pronto, esperando o teste no OBS.
+**Etapas 0 a 3 concluídas.** Próxima: Etapa 4 (Supabase).
+A Etapa 3 foi aprovada testando no navegador com o chat real; o teste no OBS
+fica para quando der (o mais tardar, na Etapa 7).
 
 ### Decisões tomadas no caminho (mudam o que está escrito acima)
 - **Molde:** 48×48 em escala 3× (144 px na tela), não 32×32. Chegamos a testar
