@@ -3,7 +3,7 @@
 Leia este arquivo e `docs/PROJETO.md` no início de toda sessão.
 
 ## Quem sou eu
-Thainã. Dev front-end, UX e marketing de performance. Este projeto é o overlay de avatares do chat da live da Renata (twitch.tv/renataingrataaa).
+Thainã. Dev front-end, UX e marketing de performance. Este projeto é o overlay de avatares do chat da live da Renata (twitch.tv/donalurdes_inss).
 
 ## Como você trabalha comigo
 

@@ -1,6 +1,6 @@
 # elphatar
 
-Overlay de avatares do chat para a live da Renata (twitch.tv/renataingrataaa).
+Overlay de avatares do chat para a live da Renata (twitch.tv/donalurdes_inss).
 Cada pessoa que fala no chat vira um personagem em pixel art andando na parte
 de baixo da tela. Canvas 2D, sem framework, leveza como requisito.
 

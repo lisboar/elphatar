@@ -6,7 +6,7 @@ Um overlay para OBS no estilo do **Stream Village**: cada pessoa que fala no cha
 Fase 2 (depois): os avatares reagem às kills e mortes da Renata no Valorant.
 
 ## Contexto
-- Canal: twitch.tv/renataingrataaa. Live pequena, conteúdo de Valorant.
+- Canal: twitch.tv/donalurdes_inss. Live pequena, conteúdo de Valorant.
 - Identidade visual: rosa / neon escuro.
 - O PC da Renata está no limite com live e Valorant ao mesmo tempo. **Leveza é obrigatória.**
 - Desenvolvimento e testes no PC do Thainã. Só vai para o OBS da Renata depois de pronto.

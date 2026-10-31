@@ -66,7 +66,7 @@ export const config = {
   limiteDeAvatares: 60,
 
   /** Canal da Twitch lido pelo adaptador de chat. Dá para trocar no teste com ?canal=outro */
-  canal: 'renataingrataaa',
+  canal: 'donalurdes_inss',
 
   /** Contas que não ganham avatar (regra 6). Em minúsculas. */
   bots: [
