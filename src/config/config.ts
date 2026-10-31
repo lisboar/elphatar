@@ -65,11 +65,25 @@ export const config = {
   /** Quantos avatares cabem na cena antes de o overlay parar de aceitar novos. */
   limiteDeAvatares: 60,
 
-  /** Canal da Twitch lido pelo adaptador de chat (Etapa 3). */
+  /** Canal da Twitch lido pelo adaptador de chat. Dá para trocar no teste com ?canal=outro */
   canal: 'renataingrataaa',
 
-  /** Contas que não ganham avatar (regra 6). */
-  bots: ['nightbot', 'streamelements', 'moobot', 'streamlabs', 'fossabot'],
+  /** Contas que não ganham avatar (regra 6). Em minúsculas. */
+  bots: [
+    'nightbot', 'streamelements', 'moobot', 'streamlabs', 'fossabot',
+    'wizebot', 'botrixoficial', 'soundalerts', 'sery_bot', 'kofistreambot',
+  ],
+
+  /** Lista de quem está na tela, guardada para sobreviver a um recarregamento. */
+  sessao: {
+    /** Overlay parado por mais que isto = live nova, a tela começa vazia. */
+    horasParaNovaLive: 6,
+    /** De quanto em quanto tempo a lista é salva mesmo sem mudança, em segundos. */
+    salvarACada: 60,
+  },
+
+  /** Comando de mod que tira todo mundo da tela (regra 5). */
+  comandoLimpar: '!limpar',
 
   /** Identidade visual: rosa / neon escuro. */
   cores: {

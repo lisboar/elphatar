@@ -19,4 +19,10 @@ export const ambiente = {
 
   /** Enche a cena com N viewers falsos de uma vez: ?falsos=30 */
   falsos: Number(query.get('falsos') ?? '0') || 0,
+
+  /** Lê outro canal, para testar com um chat movimentado: ?canal=outro */
+  canal: query.get('canal') ?? '',
+
+  /** Liga o chat real junto com o painel de teste: ?chat=1. Desliga sempre: ?chat=0 */
+  chat: query.get('chat'),
 }

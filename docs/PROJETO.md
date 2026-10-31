@@ -39,7 +39,7 @@ Fase 2 (depois): os avatares reagem às kills e mortes da Renata no Valorant.
 | GitHub Pages + Actions | Hospedagem do overlay (deploy automático) |
 | Node LTS, Vite, TypeScript | Build |
 | Canvas 2D | Renderização |
-| tmi.js | Leitura do chat da Twitch (anônimo) |
+| WebSocket nativo (IRC da Twitch) | Leitura do chat da Twitch (anônimo), sem dependência |
 | Supabase (Postgres + Edge Functions) | Skins salvas e verificação de seguidor |
 | Twitch Developer Console | App + token para checar seguidores |
 | obs-websocket (já vem no OBS) | Receber eventos (humores, Fase 2) |
@@ -110,7 +110,8 @@ Cada etapa termina com o "ok" do Thainã.
 
 ## Onde estamos (atualizado em 28/10/2026)
 
-**Etapas 0, 1 e 2 concluídas.** Próxima: Etapa 3 (chat real da Twitch).
+**Etapas 0, 1 e 2 concluídas.** Etapa 3 (chat real da Twitch) com o código
+pronto, esperando o teste no OBS.
 
 ### Decisões tomadas no caminho (mudam o que está escrito acima)
 - **Molde:** 48×48 em escala 3× (144 px na tela), não 32×32. Chegamos a testar
@@ -195,9 +196,22 @@ espelhado na hora do `drawImage`.
   a ferramenta anterior.
 - A passada (linha das patas e cortes) é marcada clicando no quadro, de perfil.
 
-### O que falta saber antes da Etapa 3
-Nada bloqueando. O adaptador de chat entra em `src/main.ts`, chamando
-`cena.entrar()` e `avatar.falar()` — a cena já está pronta para receber.
+### Etapa 3: chat real (31/10/2026)
+- **Sem tmi.js:** o chat é lido direto do IRC da Twitch por WebSocket
+  (`src/chat/twitch.ts`), anônimo (`justinfan`), sem token. Lê, não escreve.
+  Sub, raid e bits vêm na mesma conexão e entram quando forem pedidos.
+  Seguir o canal, pontos do canal e "é seguidor?" não vêm pelo chat: são
+  EventSub/API, pelo Supabase.
+- Adaptador em `src/chat/fonte.ts` (`FonteDeChat`, `MensagemDeChat`).
+- Reconexão sozinha (1 s, 2 s, 4 s… até 30 s) e vigia: 6 min sem nada da
+  Twitch = reconecta.
+- **Sessão** (`src/core/sessao.ts`): a lista fica no localStorage, por canal.
+  Overlay parado por mais de 6 h (`config.sessao`) = live nova, tela vazia.
+  `!limpar` de mod ou do dono do canal também zera.
+- Mensagem que começa com `!` faz o avatar entrar, mas não vira balão.
+- URL: `?canal=outro` lê outro canal (teste). Com `?teste=1` o chat real fica
+  desligado e a sessão não é salva; `?chat=1` liga junto com o painel.
+- Pendente: o zumbi 2 no editor, que fica para depois.
 
 ## Fase 2 (não começar antes da Fase 1 terminar)
 - Advanced Scene Switcher detectando, em recortes pequenos da tela:

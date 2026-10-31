@@ -1,4 +1,8 @@
 import { ambiente } from './config/ambiente'
+import { config } from './config/config'
+import { manterSessao } from './core/sessao'
+import { ChatTwitch } from './chat/twitch'
+import type { FonteDeChat } from './chat/fonte'
 import { criarPalco, iniciarLaco } from './core/palco'
 import { criarDiagnostico } from './core/diagnostico'
 import { Cena } from './core/cena'
@@ -44,9 +48,30 @@ iniciarLaco((delta) => {
   }
 })
 
-if (ambiente.teste || ambiente.falsos > 0) {
+const modoTeste = ambiente.teste || ambiente.falsos > 0
+
+if (modoTeste) {
   const { montarPainel } = await import('./core/painel')
   montarPainel(cena, () => fps, ambiente.falsos, () => custo)
 }
 
-// Etapa 3: o adaptador de chat entra aqui, chamando cena.entrar() e falar().
+// No teste o chat real só liga com ?chat=1, e a sessão não é salva, para os
+// viewers falsos não voltarem no OBS.
+const usarChat = ambiente.chat === null ? !modoTeste : ambiente.chat === '1'
+
+if (usarChat) {
+  const canal = (ambiente.canal || config.canal).toLowerCase()
+  if (!modoTeste) manterSessao(canal, cena)
+
+  const chat: FonteDeChat = new ChatTwitch(canal)
+  chat.conectar((mensagem) => {
+    if (mensagem.mod && mensagem.texto.toLowerCase() === config.comandoLimpar) {
+      cena.limpar()
+      return
+    }
+
+    const avatar = cena.entrar(mensagem.login, mensagem.nome)
+    // comandos (Etapa 5) fazem o avatar entrar, mas não viram balão
+    if (avatar && !mensagem.texto.startsWith('!')) avatar.falar(mensagem.texto)
+  })
+}

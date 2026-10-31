@@ -12,6 +12,8 @@ export class Cena {
   private readonly avatares = new Map<string, Avatar>()
   /** Ordem de desenho, refeita só quando alguém entra ou sai. */
   private ordem: Avatar[] = []
+  /** Chamado quando alguém entra ou sai. A sessão usa para salvar a lista. */
+  aoMudar: (() => void) | null = null
 
   get quantidade(): number {
     return this.avatares.size
@@ -37,16 +39,20 @@ export class Cena {
     const avatar = new Avatar(chave, nome ?? login, skin)
     this.avatares.set(chave, avatar)
     this.reordenar()
+    this.aoMudar?.()
     return avatar
   }
 
   sair(login: string): void {
-    if (this.avatares.delete(login.toLowerCase())) this.reordenar()
+    if (!this.avatares.delete(login.toLowerCase())) return
+    this.reordenar()
+    this.aoMudar?.()
   }
 
   limpar(): void {
     this.avatares.clear()
     this.ordem = []
+    this.aoMudar?.()
   }
 
   /** Quem está mais à frente da faixa é desenhado por último. */
