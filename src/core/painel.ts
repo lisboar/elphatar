@@ -32,7 +32,7 @@ const FRASES = [
 
 const COMANDOS_DE_TESTE = [
   '!aleatorio', '!humano', '!animal', '!monstro', '!pele', '!cabelo',
-  '!cor_cabelo', '!roupa', '!cor_roupa', '!acessorio',
+  '!cor_cabelo', '!roupa', '!cor_roupa', '!olho', '!cor_olho', '!acessorio',
 ]
 
 function sortear<T>(lista: readonly T[]): T {

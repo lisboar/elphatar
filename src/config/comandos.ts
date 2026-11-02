@@ -9,7 +9,7 @@
 
 export const ACOES = [
   'aleatorio', 'humano', 'animal', 'monstro', 'pele', 'cabelo', 'corCabelo',
-  'roupa', 'corRoupa', 'acessorio', 'comandos', 'limpar',
+  'roupa', 'corRoupa', 'olho', 'corOlho', 'acessorio', 'comandos', 'limpar',
 ] as const
 export type Acao = (typeof ACOES)[number]
 
@@ -23,6 +23,8 @@ export const descricoes: Record<Acao, string> = {
   corCabelo: 'Próxima cor de cabelo',
   roupa: 'Próxima roupa',
   corRoupa: 'Próxima cor de roupa (no bicho, a cor dele)',
+  olho: 'Próximo olho',
+  corOlho: 'Próxima cor de olho',
   acessorio: 'Próximo acessório',
   comandos: 'O bot responde com a lista de comandos',
   limpar: 'Tira todo mundo da tela (só mods)',
@@ -38,6 +40,8 @@ const PADRAO: Record<Acao, string[]> = {
   corCabelo: ['!cor_cabelo'],
   roupa: ['!roupa'],
   corRoupa: ['!cor_roupa'],
+  olho: ['!olho'],
+  corOlho: ['!cor_olho'],
   acessorio: ['!acessorio'],
   comandos: ['!comandos', '!avatar'],
   limpar: ['!limpar'],
@@ -98,7 +102,10 @@ export function validarComandos(dados: unknown): ConfigComandos {
  */
 const GRUPOS: { rotulo: string; acoes: Acao[] }[] = [
   { rotulo: '🎲 Corpo', acoes: ['aleatorio', 'humano', 'animal', 'monstro'] },
-  { rotulo: '🎨 Visual', acoes: ['pele', 'cabelo', 'corCabelo', 'roupa', 'corRoupa', 'acessorio'] },
+  {
+    rotulo: '🎨 Visual',
+    acoes: ['pele', 'cabelo', 'corCabelo', 'roupa', 'corRoupa', 'olho', 'corOlho', 'acessorio'],
+  },
 ]
 
 /** Texto do `!comandos`: o primeiro gatilho de cada ação, por grupo, mais as respostas de texto. */

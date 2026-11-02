@@ -65,6 +65,8 @@ function aplicarAcao(acao: Acao, avatar: Avatar): Skin {
     case 'corCabelo': return humano ? comCor(s, 'cabelo', s.cores.cabelo + 1) : s
     case 'roupa': return humano ? proxima(s, 'roupa') : s
     case 'corRoupa': return humano ? comCor(s, 'roupa', s.cores.roupa + 1) : comCor(s, 'criatura', s.cores.criatura + 1)
+    case 'olho': return humano ? proxima(s, 'olhos') : s
+    case 'corOlho': return humano ? comCor(s, 'olhos', s.cores.olhos + 1) : s
     case 'acessorio': return humano ? proxima(s, 'acessorio') : s
     default: return s
   }
