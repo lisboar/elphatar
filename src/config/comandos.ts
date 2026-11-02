@@ -100,36 +100,26 @@ export function validarComandos(dados: unknown): ConfigComandos {
  * Grupos do `!comandos`. O chat da Twitch não aceita quebra de linha, então
  * a separação é visual, numa mensagem só.
  */
-const GRUPOS: { icone: string; acoes: Acao[] }[][] = [
-  [
-    { icone: '🎲', acoes: ['aleatorio'] },
-    { icone: '🧍', acoes: ['humano'] },
-    { icone: '🐾', acoes: ['animal'] },
-    { icone: '👻', acoes: ['monstro'] },
-  ],
-  [
-    { icone: '🎨', acoes: ['pele'] },
-    { icone: '💇', acoes: ['cabelo', 'corCabelo'] },
-    { icone: '👕', acoes: ['roupa', 'corRoupa'] },
-    { icone: '👀', acoes: ['olho', 'corOlho'] },
-    { icone: '🎩', acoes: ['acessorio'] },
-  ],
+const GRUPOS: { rotulo: string; acoes: Acao[] }[] = [
+  { rotulo: 'CORPO', acoes: ['aleatorio', 'humano', 'animal', 'monstro'] },
+  {
+    rotulo: 'VISUAL',
+    acoes: ['pele', 'cabelo', 'corCabelo', 'roupa', 'corRoupa', 'olho', 'corOlho', 'acessorio'],
+  },
 ]
 
 /**
- * Texto do `!comandos`, numa mensagem só: um ícone por item, a parte junto
- * da cor dela (`!cabelo + !cor_cabelo`), grupos separados por ┃.
+ * A Twitch junta espaços repetidos num só e não aceita quebra de linha.
+ * O em space (U+2003) não é juntado: é ele que dá o respiro.
  */
+const ESPACO = ' '
+
+/** Texto do `!comandos`, numa mensagem só, com os grupos bem separados. */
 export function listaDeComandos(c: ConfigComandos): string {
-  const grupos = GRUPOS.map((itens) =>
-    itens
-      .map((item) => {
-        const gatilhos = item.acoes.map((a) => c.gatilhos[a][0]).filter(Boolean)
-        return gatilhos.length ? `${item.icone} ${gatilhos.join(' + ')}` : ''
-      })
-      .filter(Boolean)
-      .join(' · '),
-  )
-  if (c.textos.length) grupos.push(`💬 ${c.textos.map((t) => t.gatilho).join(' · ')}`)
-  return grupos.filter(Boolean).join(' ┃ ')
+  const grupos = GRUPOS.map((g) => {
+    const gatilhos = g.acoes.map((a) => c.gatilhos[a][0]).filter(Boolean)
+    return gatilhos.length ? `${g.rotulo}: ${gatilhos.join(ESPACO)}` : ''
+  })
+  if (c.textos.length) grupos.push(`OUTROS: ${c.textos.map((t) => t.gatilho).join(ESPACO)}`)
+  return grupos.filter(Boolean).join(`${ESPACO}${ESPACO}|${ESPACO}${ESPACO}`)
 }
