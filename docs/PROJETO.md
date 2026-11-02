@@ -110,7 +110,8 @@ Cada etapa termina com o "ok" do Thainã.
 
 ## Onde estamos (atualizado em 31/10/2026)
 
-**Etapas 0 a 3 concluídas.** Etapa 4 (Supabase) em teste.
+**Etapas 0 a 5 com o código pronto.** Falta a Renata entrar uma vez no painel
+(ativa a leitura de seguidores, que fecha as Etapas 4 e 5). Próxima: Etapa 6.
 A Etapa 3 foi aprovada testando no navegador com o chat real; o teste no OBS
 fica para quando der (o mais tardar, na Etapa 7).
 
@@ -233,8 +234,24 @@ espelhado na hora do `drawImage`.
 - Overlay: limite de 60 pedidos/min ao Supabase; fora do ar, segue sem skins
   salvas.
 - Código das funções em `supabase/functions/`. O deploy foi feito pelo MCP.
-- **Etapa 5:** a lista de comandos no chat (`!comandos`) precisa de uma conta
-  que escreve no chat (bot ou a da Renata), autorizada pelo mesmo app.
+### Etapa 5: comandos (02/11/2026)
+- Lista final (decidida pelo Thainã): `!aleatorio` `!humano` `!animal`
+  `!monstro` `!pele` `!cabelo` `!cor_cabelo` `!roupa` `!cor_roupa` `!olho`
+  `!cor_olho` `!acessorio` `!comandos`/`!avatar` e `!limpar` (mods).
+  Saíram `!pular`, `!tipo` e `!parte`.
+- `!animal`/`!monstro` passam pelos bichos do grupo (`config.grupos`; criatura
+  fora da lista vira monstro). Em bicho só valem `!cor_roupa` (cor do bicho)
+  e os de corpo.
+- Gatilhos e respostas de texto do bot são editáveis no painel (vão em
+  `ajustes.dados.comandos`, validados por `src/config/comandos.ts`).
+  Thainã e Renata têm o mesmo acesso.
+- Conta-bot `elpha_bot` escreve pela função `falar` (Helix, `user:write:chat`).
+  Conectada pelo painel ("conectar bot"); o token fica na linha 2 de
+  `token_twitch`. A Twitch não aceita quebra de linha: o `!comandos` é uma
+  mensagem só, com em space (U+2003) separando.
+- Espera: 3 s por viewer; o bot repete a mesma resposta no máximo a cada 30 s.
+- Sem saber se segue (Renata não autorizou, Supabase fora): o comando é liberado.
+- O painel de teste (`?teste=1`) tem "alguém usa comando".
 
 ## Fase 2 (não começar antes da Fase 1 terminar)
 - Advanced Scene Switcher detectando, em recortes pequenos da tela:
