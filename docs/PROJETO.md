@@ -111,7 +111,17 @@ Cada etapa termina com o "ok" do Thainã.
 ## Onde estamos (atualizado em 31/10/2026)
 
 **Etapas 0 a 5 com o código pronto.** Falta a Renata entrar uma vez no painel
-(ativa a leitura de seguidores, que fecha as Etapas 4 e 5). Próxima: Etapa 6.
+(ativa a leitura de seguidores, que fecha as Etapas 4 e 5).
+
+**Etapa 6 pausada** (02/11/2026). Antes dela:
+- **Arte nova em SVG**, feita pelo Thainã no Claude Design a partir de
+  `docs/brief-claude-design.md` (molde 256×256, cores-código, camadas em
+  pastas numeradas). Quando a pasta `arte/` chegar, o renderizador passa de
+  matriz de pixels para SVG; o editor de pixels sai e o Laboratório é adaptado.
+- **Animação de chegada** (feita): `src/core/chegada.ts`, sorteia entre
+  paraquedas, portal neon vertical e faíscas, 3,4 a 4,5 s cada
+  (`config.chegada`). Só para quem fala pela primeira vez na live; quem volta
+  da sessão salva não anima. Botões de cada uma no painel de teste.
 A Etapa 3 foi aprovada testando no navegador com o chat real; o teste no OBS
 fica para quando der (o mais tardar, na Etapa 7).
 
