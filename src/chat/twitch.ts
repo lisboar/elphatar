@@ -140,6 +140,7 @@ export class ChatTwitch implements FonteDeChat {
 
         const badges = linha.tags['badges'] ?? ''
         this.aoReceber?.({
+          id: linha.tags['user-id'] ?? '',
           login,
           nome: linha.tags['display-name'] || login,
           texto,

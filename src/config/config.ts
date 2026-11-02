@@ -102,6 +102,10 @@ export const config = {
   supabase: {
     url: 'https://hwpgphfrjeovndusvazg.supabase.co',
     chavePublica: 'sb_publishable_nND5Jj2o-Wpbs6Rt_OMvMA_Xxj-hbwi',
+    /** Teto de pedidos do overlay por minuto. Protege o plano grátis de um loop de bug. */
+    limitePorMinuto: 60,
+    /** Quem não segue é perguntado de novo depois disto, em segundos (pode seguir na live). */
+    recheckarNaoSeguidorEm: 300,
   },
 
   /** App no Twitch Developer Console. O Client ID é público; o secret fica só no Supabase. */

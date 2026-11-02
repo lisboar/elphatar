@@ -2,6 +2,7 @@ import { ambiente } from './config/ambiente'
 import { config } from './config/config'
 import { manterSessao } from './core/sessao'
 import { acompanharAjustes, ouvirPrevia } from './core/sincronia'
+import { buscarSkin } from './core/servicos'
 import { ChatTwitch } from './chat/twitch'
 import type { FonteDeChat } from './chat/fonte'
 import { criarPalco, iniciarLaco } from './core/palco'
@@ -76,8 +77,19 @@ if (usarChat) {
       return
     }
 
+    const novo = !cena.obter(mensagem.login)
     const avatar = cena.entrar(mensagem.login, mensagem.nome)
+    if (!avatar) return
+
     // comandos (Etapa 5) fazem o avatar entrar, mas não viram balão
-    if (avatar && !mensagem.texto.startsWith('!')) avatar.falar(mensagem.texto)
+    if (!mensagem.texto.startsWith('!')) avatar.falar(mensagem.texto)
+
+    // primeira mensagem na live: entra com a skin do nome e troca pela salva, se houver
+    if (novo && mensagem.id) {
+      avatar.twitchId = mensagem.id
+      void buscarSkin(mensagem.id).then((skin) => {
+        if (skin) avatar.trocarSkin(skin)
+      })
+    }
   })
 }

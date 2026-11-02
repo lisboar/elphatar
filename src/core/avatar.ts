@@ -6,6 +6,8 @@ import { desenharBalao, desenharNome } from './rotulo'
 /** Um viewer na tela. */
 export class Avatar {
   readonly login: string
+  /** ID da Twitch: chave da skin salva no Supabase. Vazio nos viewers falsos. */
+  twitchId = ''
   nome: string
   skin: Skin
 

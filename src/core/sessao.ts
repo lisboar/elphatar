@@ -1,6 +1,6 @@
 import { config } from '../config/config'
 import type { Cena } from './cena'
-import type { Skin } from '../sprites/skin'
+import { skinValida, type Skin } from '../sprites/skin'
 
 /**
  * Regra 2 do projeto: quem está na tela volta se o browser source recarregar.
@@ -12,7 +12,7 @@ import type { Skin } from '../sprites/skin'
 
 interface Guardado {
   salvoEm: number
-  avatares: { login: string; nome: string; skin: Skin }[]
+  avatares: { login: string; nome: string; skin: Skin; twitchId?: string }[]
 }
 
 const chave = (canal: string) => `elphatar:sessao:${canal}`
@@ -29,7 +29,9 @@ function ler(canal: string): Guardado | null {
 function gravar(canal: string, cena: Cena): void {
   const guardado: Guardado = {
     salvoEm: Date.now(),
-    avatares: cena.lista.map((a) => ({ login: a.login, nome: a.nome, skin: a.skin })),
+    avatares: cena.lista.map((a) => ({
+      login: a.login, nome: a.nome, skin: a.skin, twitchId: a.twitchId,
+    })),
   }
   try {
     localStorage.setItem(chave(canal), JSON.stringify(guardado))
@@ -44,7 +46,10 @@ export function manterSessao(canal: string, cena: Cena): void {
   const limite = config.sessao.horasParaNovaLive * 60 * 60 * 1000
 
   if (guardado && Date.now() - guardado.salvoEm < limite) {
-    for (const a of guardado.avatares) cena.entrar(a.login, a.nome, a.skin)
+    for (const a of guardado.avatares) {
+      const avatar = cena.entrar(a.login, a.nome, skinValida(a.skin) ?? undefined)
+      if (avatar) avatar.twitchId = a.twitchId ?? ''
+    }
     console.info(`[sessão] ${guardado.avatares.length} avatares de volta`)
   }
 

@@ -79,6 +79,32 @@ export function skinDeSemente(texto: string, tipo?: TipoCorpo): Skin {
   return montar(tipo ?? (sortear() < 0.75 ? 'humanoide' : 'criatura'), sortear)
 }
 
+/**
+ * Confere uma skin vinda de fora (Supabase, sessão). O que faltar ou estiver
+ * fora do catálogo vira 0. Null = nem dá para aproveitar.
+ */
+export function skinValida(dados: unknown): Skin | null {
+  if (!dados || typeof dados !== 'object') return null
+  const s = dados as { tipo?: unknown; partes?: unknown; cores?: unknown }
+  if (s.tipo !== 'humanoide' && s.tipo !== 'criatura') return null
+  const tipo: TipoCorpo = s.tipo
+  const fonte = (v: unknown) => (v && typeof v === 'object' ? (v as Record<string, unknown>) : {})
+  const inteiro = (v: unknown, n: number) =>
+    Number.isInteger(v) && (v as number) >= 0 && (v as number) < n ? (v as number) : 0
+
+  const partesFonte = fonte(s.partes)
+  const coresFonte = fonte(s.cores)
+  return {
+    tipo,
+    partes: Object.fromEntries(
+      tiposDo(tipo).map((t) => [t.nome, inteiro(partesFonte[t.nome], t.partes.length)]),
+    ),
+    cores: Object.fromEntries(
+      SLOTS.map((slot) => [slot, inteiro(coresFonte[slot], paletas[slot].length)]),
+    ) as Record<Slot, number>,
+  }
+}
+
 /** Troca uma parte ou uma cor, devolvendo uma skin nova. */
 export function comParte(skin: Skin, tipo: string, indice: number): Skin {
   const lista = partesDo(skin.tipo, tipo)

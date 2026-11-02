@@ -18,6 +18,12 @@ export interface Sessao {
 
 const GUARDADA = 'elphatar:controle:sessao'
 
+/**
+ * Refresh token da Twitch que chega só na volta do login. Não é guardado
+ * aqui: o painel entrega para a Edge Function `token-twitch` e esquece.
+ */
+export let tokenDaTwitchNaVolta: string | null = null
+
 function guardar(sessao: Sessao): Sessao {
   try {
     localStorage.setItem(GUARDADA, JSON.stringify(sessao))
@@ -54,6 +60,7 @@ async function lerVoltaDoLogin(): Promise<Sessao | null> {
   if (erro) throw new Error(`A Twitch não autorizou: ${erro}`)
 
   const access_token = dados.get('access_token')!
+  tokenDaTwitchNaVolta = dados.get('provider_refresh_token')
   const { url, chavePublica } = config.supabase
   const resposta = await fetch(`${url}/auth/v1/user`, {
     headers: { apikey: chavePublica, Authorization: `Bearer ${access_token}` },

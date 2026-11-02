@@ -1,6 +1,6 @@
 import { config } from '../config/config'
 import { aplicarAjustes, campos, padroes, type Ajustes, type Campo } from '../config/ajustes'
-import { entrarComTwitch, sair, sessaoAtual, type Sessao } from './conta'
+import { entrarComTwitch, sair, sessaoAtual, tokenDaTwitchNaVolta, type Sessao } from './conta'
 
 /**
  * Painel de controle: a equipe (Thainã e Renata) muda os ajustes do overlay
@@ -195,6 +195,26 @@ async function salvar(): Promise<void> {
   }
 }
 
+/**
+ * Leitura de seguidores: se quem acabou de entrar é a Renata, o token dela
+ * vai para o Supabase. Para os outros, só mostra como está.
+ */
+async function conferirSeguidores(): Promise<void> {
+  const alvo = $('seguidores')
+  const opcoes: RequestInit = tokenDaTwitchNaVolta
+    ? { method: 'POST', body: JSON.stringify({ provider_refresh_token: tokenDaTwitchNaVolta }) }
+    : {}
+  try {
+    const resposta = await api('/functions/v1/token-twitch', opcoes)
+    const estado = (await resposta.json()) as { ativo?: boolean; login?: string | null }
+    alvo.textContent = estado.ativo
+      ? `Seguidores: ativo (${estado.login})`
+      : 'Seguidores: a Renata precisa entrar aqui uma vez'
+  } catch {
+    alvo.textContent = 'Seguidores: não deu para conferir'
+  }
+}
+
 // ---------- início ----------
 
 async function abrirPainel(sessao: Sessao): Promise<void> {
@@ -207,6 +227,7 @@ async function abrirPainel(sessao: Sessao): Promise<void> {
 
   montarCampos()
   montarPrevia()
+  if (daEquipe || tokenDaTwitchNaVolta) void conferirSeguidores()
   try {
     await carregar()
   } catch (erro) {
