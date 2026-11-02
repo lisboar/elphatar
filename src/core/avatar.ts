@@ -8,6 +8,8 @@ export class Avatar {
   readonly login: string
   /** ID da Twitch: chave da skin salva no Supabase. Vazio nos viewers falsos. */
   twitchId = ''
+  /** Resolve quando a skin salva já foi buscada. Comandos esperam por isto. */
+  pronto: Promise<void> = Promise.resolve()
   nome: string
   skin: Skin
 

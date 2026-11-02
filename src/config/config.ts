@@ -91,8 +91,21 @@ export const config = {
     salvarACada: 60,
   },
 
-  /** Comando de mod que tira todo mundo da tela (regra 5). */
-  comandoLimpar: '!limpar',
+  /** Comandos do chat. Os gatilhos ficam em `comandos.ts` e o painel pode renomear. */
+  comandos: {
+    /** Segundos entre dois comandos do mesmo viewer. */
+    esperaPorViewer: 3,
+    /** Segundos entre duas respostas do bot ao mesmo comando (contra spam no chat). */
+    esperaDoBot: 30,
+  },
+
+  /**
+   * Em que grupo cada criatura entra, para `!animal` e `!monstro`.
+   * Pelo nome da parte no `criatura.json`. Criatura nova fora da lista vira monstro.
+   */
+  grupos: {
+    animal: ['gato', 'cachorro', 'capivara', 'galinha'],
+  },
 
   /**
    * Projeto Supabase. Os dois valores são públicos por natureza: vão no JS de
@@ -113,6 +126,8 @@ export const config = {
     clientId: 'rlywmuqxfq1z3uxw75ioo3eb3qtqou',
     /** Pedidos no login do painel. Seguidores: vale para a dona do canal e mods. */
     escopos: ['moderator:read:followers'],
+    /** Pedidos ao conectar a conta-bot: escrever no chat. */
+    escoposDoBot: ['user:write:chat'],
   },
 
   /** De quanto em quanto tempo o overlay confere os ajustes do painel, em segundos. */

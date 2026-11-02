@@ -80,13 +80,25 @@ export async function perguntarSeSegue(accessToken: string, usuarioId: string): 
   return corpo.data.length > 0
 }
 
-/** Access token do canal, renovado e guardado se estiver vencendo. Null = ninguém autorizou ainda. */
-export async function tokenDoCanal(forcarRenovacao = false): Promise<string | null> {
-  const { data: linha } = await banco.from('token_twitch').select('*').eq('id', 1).maybeSingle()
+/** Linhas da tabela token_twitch. */
+export const TOKEN_CANAL = 1
+export const TOKEN_BOT = 2
+
+/**
+ * Access token guardado, renovado se estiver vencendo.
+ * Null = ninguém autorizou ainda.
+ */
+export async function tokenGuardado(
+  id: number,
+  forcarRenovacao = false,
+): Promise<{ token: string; twitchId: string } | null> {
+  const { data: linha } = await banco.from('token_twitch').select('*').eq('id', id).maybeSingle()
   if (!linha) return null
 
   const valeAte = linha.expira_em ? new Date(linha.expira_em).getTime() : 0
-  if (!forcarRenovacao && linha.access_token && valeAte - 60_000 > Date.now()) return linha.access_token
+  if (!forcarRenovacao && linha.access_token && valeAte - 60_000 > Date.now()) {
+    return { token: linha.access_token, twitchId: linha.twitch_id }
+  }
 
   const novo = await renovarNaTwitch(linha.refresh_token)
   await banco.from('token_twitch').update({
@@ -94,6 +106,10 @@ export async function tokenDoCanal(forcarRenovacao = false): Promise<string | nu
     refresh_token: novo.refresh_token,
     expira_em: new Date(Date.now() + novo.expires_in * 1000).toISOString(),
     atualizado_em: new Date().toISOString(),
-  }).eq('id', 1)
-  return novo.access_token
+  }).eq('id', id)
+  return { token: novo.access_token, twitchId: linha.twitch_id }
+}
+
+export async function tokenDoCanal(forcarRenovacao = false): Promise<string | null> {
+  return (await tokenGuardado(TOKEN_CANAL, forcarRenovacao))?.token ?? null
 }

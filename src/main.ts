@@ -3,6 +3,7 @@ import { config } from './config/config'
 import { manterSessao } from './core/sessao'
 import { acompanharAjustes, ouvirPrevia } from './core/sincronia'
 import { buscarSkin } from './core/servicos'
+import { tratarComando } from './core/comandos'
 import { ChatTwitch } from './chat/twitch'
 import type { FonteDeChat } from './chat/fonte'
 import { criarPalco, iniciarLaco } from './core/palco'
@@ -72,24 +73,20 @@ if (usarChat) {
 
   const chat: FonteDeChat = new ChatTwitch(canal)
   chat.conectar((mensagem) => {
-    if (mensagem.mod && mensagem.texto.toLowerCase() === config.comandoLimpar) {
-      cena.limpar()
-      return
-    }
-
     const novo = !cena.obter(mensagem.login)
     const avatar = cena.entrar(mensagem.login, mensagem.nome)
-    if (!avatar) return
 
-    // comandos (Etapa 5) fazem o avatar entrar, mas não viram balão
-    if (!mensagem.texto.startsWith('!')) avatar.falar(mensagem.texto)
-
-    // primeira mensagem na live: entra com a skin do nome e troca pela salva, se houver
-    if (novo && mensagem.id) {
+    // primeira mensagem na live: entra com a skin do nome e troca pela salva, se houver.
+    // Um comando que chegue junto espera isto, para não ser desfeito pela skin salva.
+    if (avatar && novo && mensagem.id) {
       avatar.twitchId = mensagem.id
-      void buscarSkin(mensagem.id).then((skin) => {
+      avatar.pronto = buscarSkin(mensagem.id).then((skin) => {
         if (skin) avatar.trocarSkin(skin)
       })
     }
+
+    // comando faz o avatar entrar, mas não vira balão
+    if (tratarComando(mensagem, cena)) return
+    avatar?.falar(mensagem.texto)
   })
 }

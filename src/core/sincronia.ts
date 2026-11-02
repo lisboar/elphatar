@@ -1,5 +1,6 @@
 import { config } from '../config/config'
 import { aplicarAjustes } from '../config/ajustes'
+import { aplicarComandos } from './comandos'
 
 /**
  * O overlay confere os ajustes do painel no Supabase de tempos em tempos.
@@ -17,6 +18,7 @@ function aplicarSeMudou(versao: string, dados: unknown): void {
   if (versao === ultimaVersao) return
   ultimaVersao = versao
   aplicarAjustes(dados)
+  aplicarComandos((dados as { comandos?: unknown } | null)?.comandos)
   console.info(`[ajustes] aplicados (${versao || 'cache'})`)
 }
 

@@ -1,6 +1,7 @@
 import { config } from '../config/config'
 import type { Cena } from './cena'
 import { skinAleatoria } from '../sprites/skin'
+import { tratarComando } from './comandos'
 
 /**
  * Painel de teste: um chat falso, para ver a cena funcionando sem depender da
@@ -27,6 +28,11 @@ const FRASES = [
   'posso jogar com voces depois',
   'esse ace foi limpo demais',
   'chat ta voando hoje',
+]
+
+const COMANDOS_DE_TESTE = [
+  '!aleatorio', '!humano', '!animal', '!monstro', '!pele', '!cabelo',
+  '!cor_cabelo', '!roupa', '!cor_roupa', '!acessorio',
 ]
 
 function sortear<T>(lista: readonly T[]): T {
@@ -75,6 +81,15 @@ export function montarPainel(
     }),
     botao('trocar skins', () => {
       for (const a of cena.lista) a.trocarSkin(skinAleatoria())
+    }),
+    botao('alguém usa comando', () => {
+      const lista = cena.lista
+      if (lista.length === 0) return
+      const avatar = sortear(lista)
+      const texto = sortear(COMANDOS_DE_TESTE)
+      // mod: o teste não tem como perguntar "segue o canal?"
+      tratarComando({ id: '', login: avatar.login, nome: avatar.nome, texto, mod: true, origem: 'teste' }, cena)
+      console.info(`[teste] ${avatar.login}: ${texto}`)
     }),
     botao('!limpar', () => cena.limpar()),
     contador,

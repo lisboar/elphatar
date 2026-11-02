@@ -66,6 +66,18 @@ export async function salvarSkin(twitchId: string, login: string, skin: Skin): P
   return resposta?.ok === true
 }
 
+/** A conta-bot escreve no chat. False = não foi (sem chave, bot não conectado, Twitch recusou). */
+export async function falarNoChat(mensagem: string): Promise<boolean> {
+  if (!ambiente.chaveOverlay) return false
+  const resposta = await pedir<{ ok: boolean; motivo?: string }>('/functions/v1/falar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mensagem }),
+  })
+  if (resposta && !resposta.ok) console.warn('[bot]', resposta.motivo)
+  return resposta?.ok === true
+}
+
 /** Cache da sessão: quem segue não é perguntado de novo. */
 const seguidores = new Map<string, { segue: boolean; em: number }>()
 

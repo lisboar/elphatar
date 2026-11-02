@@ -24,6 +24,10 @@ const GUARDADA = 'elphatar:controle:sessao'
  */
 export let tokenDaTwitchNaVolta: string | null = null
 
+/** A volta do login foi da conta-bot (e não de alguém da equipe entrando). */
+export let voltouDoBot = false
+const CONECTANDO_BOT = 'elphatar:controle:conectando-bot'
+
 function guardar(sessao: Sessao): Sessao {
   try {
     localStorage.setItem(GUARDADA, JSON.stringify(sessao))
@@ -38,16 +42,33 @@ function nomeDoUsuario(usuario: { user_metadata?: Record<string, unknown> }): st
   return String(meta['nickname'] ?? meta['name'] ?? meta['full_name'] ?? 'sem nome')
 }
 
-export function entrarComTwitch(): void {
+function irParaTwitch(escopos: readonly string[]): void {
   const { url } = config.supabase
-  const volta = location.origin + location.pathname
   const parametros = new URLSearchParams({
     provider: 'twitch',
-    redirect_to: volta,
-    // seguidores: só funciona para a dona do canal ou mods; para os outros é inofensivo
-    scopes: config.twitch.escopos.join(' '),
+    redirect_to: location.origin + location.pathname,
+    scopes: escopos.join(' '),
+    // a Twitch mostra "não é você?", para dar para trocar de conta
+    force_verify: 'true',
   })
   location.href = `${url}/auth/v1/authorize?${parametros}`
+}
+
+export function entrarComTwitch(): void {
+  irParaTwitch(config.twitch.escopos)
+}
+
+/**
+ * Conecta a conta-bot. Quem está no painel continua logado: a volta traz só
+ * o token do bot, que o painel entrega ao Supabase.
+ */
+export function conectarBot(): void {
+  try {
+    sessionStorage.setItem(CONECTANDO_BOT, '1')
+  } catch {
+    // sem storage a volta seria tratada como login normal; segue mesmo assim
+  }
+  irParaTwitch(config.twitch.escoposDoBot)
 }
 
 /** Lê os tokens que o Supabase deixou na URL ao voltar do login. */
@@ -61,6 +82,19 @@ async function lerVoltaDoLogin(): Promise<Sessao | null> {
 
   const access_token = dados.get('access_token')!
   tokenDaTwitchNaVolta = dados.get('provider_refresh_token')
+
+  let doBot = false
+  try {
+    doBot = sessionStorage.getItem(CONECTANDO_BOT) === '1'
+    sessionStorage.removeItem(CONECTANDO_BOT)
+  } catch {
+    // sem storage: trata como login normal
+  }
+  if (doBot) {
+    // a sessão do bot no Supabase não serve para nada: fica a da equipe
+    voltouDoBot = true
+    return null
+  }
   const { url, chavePublica } = config.supabase
   const resposta = await fetch(`${url}/auth/v1/user`, {
     headers: { apikey: chavePublica, Authorization: `Bearer ${access_token}` },

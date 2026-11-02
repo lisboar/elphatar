@@ -1,6 +1,8 @@
 import { config } from '../config/config'
 import { aplicarAjustes, campos, padroes, type Ajustes, type Campo } from '../config/ajustes'
-import { entrarComTwitch, sair, sessaoAtual, tokenDaTwitchNaVolta, type Sessao } from './conta'
+import { comandosPadrao, validarComandos, type ConfigComandos } from '../config/comandos'
+import { conectarBot, entrarComTwitch, sair, sessaoAtual, tokenDaTwitchNaVolta, voltouDoBot, type Sessao } from './conta'
+import { comandosDoRascunho, montarComandos, mostrarComandos } from './comandos'
 
 /**
  * Painel de controle: a equipe (Thainã e Renata) muda os ajustes do overlay
@@ -20,6 +22,7 @@ const NAO_SALVO = 'Mudanças ainda não salvas.'
 
 let salvo: Ajustes = { ...padroes }
 let rascunho: Ajustes = { ...padroes }
+let comandosSalvos: ConfigComandos = comandosPadrao
 let iframe: HTMLIFrameElement | null = null
 const atualizarControle = new Map<string, (v: Ajustes[string]) => void>()
 
@@ -77,8 +80,14 @@ function montarPrevia(): void {
 
 // ---------- campos ----------
 
+function comandosParaSalvar(): ConfigComandos {
+  return validarComandos(comandosDoRascunho())
+}
+
 function mudou(): void {
-  const diferente = campos.some((c) => rascunho[c.chave] !== salvo[c.chave])
+  const diferente =
+    campos.some((c) => rascunho[c.chave] !== salvo[c.chave]) ||
+    JSON.stringify(comandosParaSalvar()) !== JSON.stringify(comandosSalvos)
   botaoSalvar.disabled = !diferente
   botaoDesfazer.disabled = !diferente
   if (diferente) avisar(mensagem, NAO_SALVO)
@@ -152,9 +161,10 @@ function montarCampos(): void {
   }
 }
 
-function mostrar(valores: Ajustes): void {
+function mostrar(valores: Ajustes, comandos: ConfigComandos): void {
   rascunho = { ...valores }
   for (const campo of campos) atualizarControle.get(campo.chave)?.(rascunho[campo.chave]!)
+  mostrarComandos(comandos)
   mudou()
 }
 
@@ -166,7 +176,8 @@ async function carregar(): Promise<void> {
   const [linha] = (await resposta.json()) as { dados: unknown; atualizado_em: string; atualizado_por: string | null }[]
 
   salvo = aplicarAjustes(linha?.dados)
-  mostrar(salvo)
+  comandosSalvos = validarComandos((linha?.dados as { comandos?: unknown } | undefined)?.comandos)
+  mostrar(salvo, comandosSalvos)
   if (linha?.atualizado_por) {
     avisar(mensagem, `Última mudança: ${hora(linha.atualizado_em)}, por ${linha.atualizado_por}.`)
   }
@@ -175,11 +186,12 @@ async function carregar(): Promise<void> {
 async function salvar(): Promise<void> {
   botaoSalvar.disabled = true
   avisar(mensagem, 'Salvando…')
+  const comandos = comandosParaSalvar()
   try {
     const resposta = await api('/rest/v1/ajustes?id=eq.1', {
       method: 'PATCH',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ dados: rascunho }),
+      body: JSON.stringify({ dados: { ...rascunho, comandos } }),
     })
     if (!resposta.ok) throw new Error(`Erro ${resposta.status} ao salvar.`)
     const linhas = (await resposta.json()) as { atualizado_em: string }[]
@@ -187,7 +199,9 @@ async function salvar(): Promise<void> {
     if (linhas.length === 0) throw new Error('Esta conta não tem permissão para mudar o overlay.')
 
     salvo = { ...rascunho }
-    mudou()
+    comandosSalvos = comandos
+    // mostra como ficou valendo (gatilho inválido ou repetido some aqui)
+    mostrarComandos(comandos)
     avisar(mensagem, `Salvo às ${hora(linhas[0]!.atualizado_em)}. O overlay muda em até ${config.conferirAjustesACada} s.`)
   } catch (erro) {
     botaoSalvar.disabled = false
@@ -195,23 +209,38 @@ async function salvar(): Promise<void> {
   }
 }
 
+interface EstadoDosTokens {
+  canal?: { ativo: boolean; login: string | null }
+  bot?: { ativo: boolean; login: string | null }
+  motivo?: string
+}
+
 /**
- * Leitura de seguidores: se quem acabou de entrar é a Renata, o token dela
- * vai para o Supabase. Para os outros, só mostra como está.
+ * Tokens da Twitch: se acabou de voltar do login com um token novo (da Renata
+ * ou da conta-bot), ele vai para o Supabase. Senão, só mostra como está.
  */
-async function conferirSeguidores(): Promise<void> {
-  const alvo = $('seguidores')
+async function conferirTokens(): Promise<void> {
+  const seguidores = $('seguidores')
+  const bot = $('bot')
   const opcoes: RequestInit = tokenDaTwitchNaVolta
-    ? { method: 'POST', body: JSON.stringify({ provider_refresh_token: tokenDaTwitchNaVolta }) }
+    ? {
+        method: 'POST',
+        body: JSON.stringify({
+          papel: voltouDoBot ? 'bot' : 'canal',
+          provider_refresh_token: tokenDaTwitchNaVolta,
+        }),
+      }
     : {}
   try {
     const resposta = await api('/functions/v1/token-twitch', opcoes)
-    const estado = (await resposta.json()) as { ativo?: boolean; login?: string | null }
-    alvo.textContent = estado.ativo
-      ? `Seguidores: ativo (${estado.login})`
+    const estado = (await resposta.json()) as EstadoDosTokens
+    seguidores.textContent = estado.canal?.ativo
+      ? `Seguidores: ativo (${estado.canal.login})`
       : 'Seguidores: a Renata precisa entrar aqui uma vez'
+    bot.textContent = estado.bot?.ativo ? `Bot: ${estado.bot.login}` : 'Bot: não conectado'
+    if (estado.motivo && (voltouDoBot || tokenDaTwitchNaVolta)) avisar(mensagem, estado.motivo, true)
   } catch {
-    alvo.textContent = 'Seguidores: não deu para conferir'
+    seguidores.textContent = 'Seguidores: não deu para conferir'
   }
 }
 
@@ -226,19 +255,25 @@ async function abrirPainel(sessao: Sessao): Promise<void> {
   const daEquipe = resposta.ok && (await resposta.json()) === true
 
   montarCampos()
+  montarComandos($('comandos'), mudou)
   montarPrevia()
-  if (daEquipe || tokenDaTwitchNaVolta) void conferirSeguidores()
   try {
     await carregar()
   } catch (erro) {
     avisar(mensagem, erro instanceof Error ? erro.message : String(erro), true)
   }
+  // depois do carregar: o aviso do token (se houver) não pode ser apagado por ele
+  if (daEquipe || tokenDaTwitchNaVolta) await conferirTokens()
   if (!daEquipe) {
     avisar(mensagem, 'Esta conta da Twitch ainda não está na equipe: dá para ver, não para salvar.', true)
   }
 }
 
 $('botao-twitch').addEventListener('click', entrarComTwitch)
+$('conectar-bot').addEventListener('click', (evento) => {
+  evento.preventDefault()
+  conectarBot()
+})
 
 $('sair').addEventListener('click', (evento) => {
   evento.preventDefault()
@@ -247,8 +282,8 @@ $('sair').addEventListener('click', (evento) => {
 })
 
 botaoSalvar.addEventListener('click', () => void salvar())
-botaoDesfazer.addEventListener('click', () => mostrar(salvo))
-$('padrao').addEventListener('click', () => mostrar(padroes))
+botaoDesfazer.addEventListener('click', () => mostrar(salvo, comandosSalvos))
+$('padrao').addEventListener('click', () => mostrar(padroes, comandosPadrao))
 
 window.addEventListener('beforeunload', (evento) => {
   if (!botaoSalvar.disabled) evento.preventDefault()

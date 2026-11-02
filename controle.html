@@ -210,6 +210,53 @@
         border-radius: 6px;
         background: none;
       }
+      /* comandos */
+      .acoes-de-comando,
+      .respostas {
+        display: grid;
+        gap: 10px;
+      }
+      .campo.comando span {
+        font-size: 13px;
+      }
+      .campo.comando input,
+      .resposta input {
+        width: 100%;
+        min-width: 0;
+        padding: 6px 9px;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        background: var(--escuro);
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+      }
+      .resposta {
+        display: grid;
+        grid-template-columns: minmax(0, 7em) minmax(0, 1fr) auto;
+        gap: 6px;
+      }
+      .resposta input + input {
+        font-family: inherit;
+      }
+      .resposta button {
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+      input.invalido {
+        border-color: var(--erro) !important;
+      }
+      input:focus {
+        outline: none;
+        border-color: var(--rosa);
+      }
+      .previa-texto {
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: var(--escuro);
+        font-size: 12px;
+        opacity: 0.85;
+      }
+
       .acoes {
         display: flex;
         flex-wrap: wrap;
@@ -233,13 +280,16 @@
       <div class="topo">
         <h1>Painel do overlay</h1>
         <div class="quem">
-          <span id="seguidores"></span> · <span id="quem"></span> · <a href="#" id="sair">sair</a>
+          <span id="seguidores"></span> · <span id="bot"></span>
+          (<a href="#" id="conectar-bot" title="Entre na Twitch com a conta-bot quando ela pedir">conectar bot</a>)
+          · <span id="quem"></span> · <a href="#" id="sair">sair</a>
         </div>
       </div>
       <div class="grade">
         <div class="previa" id="previa"></div>
         <div class="campos">
           <div id="campos" class="campos"></div>
+          <div id="comandos" class="campos"></div>
           <div class="acoes">
             <button class="principal" id="salvar" disabled>Salvar</button>
             <button id="desfazer" disabled>Desfazer</button>
