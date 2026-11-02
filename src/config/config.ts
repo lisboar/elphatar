@@ -81,6 +81,8 @@ export const config = {
   bots: [
     'nightbot', 'streamelements', 'moobot', 'streamlabs', 'fossabot',
     'wizebot', 'botrixoficial', 'soundalerts', 'sery_bot', 'kofistreambot',
+    // a nossa conta-bot, que responde os comandos
+    'elpha_bot',
   ],
 
   /** Lista de quem está na tela, guardada para sobreviver a um recarregamento. */

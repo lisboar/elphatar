@@ -92,12 +92,21 @@ export function validarComandos(dados: unknown): ConfigComandos {
   return { gatilhos, textos }
 }
 
-/** Texto do `!comandos`: o primeiro gatilho de cada ação, mais as respostas de texto. */
+/**
+ * Grupos do `!comandos`. O chat da Twitch não aceita quebra de linha, então
+ * a separação é visual, numa mensagem só.
+ */
+const GRUPOS: { rotulo: string; acoes: Acao[] }[] = [
+  { rotulo: '🎲 Corpo', acoes: ['aleatorio', 'humano', 'animal', 'monstro'] },
+  { rotulo: '🎨 Visual', acoes: ['pele', 'cabelo', 'corCabelo', 'roupa', 'corRoupa', 'acessorio'] },
+]
+
+/** Texto do `!comandos`: o primeiro gatilho de cada ação, por grupo, mais as respostas de texto. */
 export function listaDeComandos(c: ConfigComandos): string {
-  const acoes = ACOES.filter((a) => a !== 'limpar' && a !== 'comandos')
-    .map((a) => c.gatilhos[a][0])
-    .filter(Boolean)
-  const textos = c.textos.map((t) => t.gatilho)
-  return `Comandos do avatar (para quem segue o canal): ${acoes.join(' ')}` +
-    (textos.length ? ` · Outros: ${textos.join(' ')}` : '')
+  const partes = GRUPOS.map((g) => {
+    const gatilhos = g.acoes.map((a) => c.gatilhos[a][0]).filter(Boolean)
+    return gatilhos.length ? `${g.rotulo}: ${gatilhos.join(' ')}` : ''
+  })
+  if (c.textos.length) partes.push(`💬 Outros: ${c.textos.map((t) => t.gatilho).join(' ')}`)
+  return partes.filter(Boolean).join(' ┃ ')
 }
