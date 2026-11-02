@@ -78,6 +78,7 @@ if (usarChat) {
 
     // primeira mensagem na live: entra com a skin do nome e troca pela salva, se houver.
     // Um comando que chegue junto espera isto, para não ser desfeito pela skin salva.
+    if (avatar && novo) avatar.chegar()
     if (avatar && novo && mensagem.id) {
       avatar.twitchId = mensagem.id
       avatar.pronto = buscarSkin(mensagem.id).then((skin) => {

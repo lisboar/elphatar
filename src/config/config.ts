@@ -51,6 +51,15 @@ export const config = {
     margemLateral: 40,
   },
 
+  /** Animação de quem chega pela primeira vez na live. Uma sorteada por avatar. */
+  chegada: {
+    tipos: ['paraquedas', 'portal', 'faiscas'] as ('paraquedas' | 'portal' | 'faiscas')[],
+    /** Duração de cada uma, em segundos (mínimo 3). */
+    segundos: { paraquedas: 4.5, portal: 3.8, faiscas: 3.4 },
+    /** Quantas faíscas formam o avatar. */
+    faiscas: 60,
+  },
+
   /** Balão de fala. */
   balao: {
     /** Quanto tempo o balão fica na tela, em segundos. */

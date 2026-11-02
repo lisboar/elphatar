@@ -2,6 +2,7 @@ import { config } from '../config/config'
 import { MARGEM, spriteDaSkin, type Direcao } from '../sprites/render'
 import { skinDeSemente, type Skin } from '../sprites/skin'
 import { desenharBalao, desenharNome } from './rotulo'
+import { Chegada, type TipoDeChegada } from './chegada'
 
 /** Um viewer na tela. */
 export class Avatar {
@@ -29,6 +30,9 @@ export class Avatar {
   private balao: HTMLCanvasElement | null = null
   private tempoDeBalao = 0
 
+  /** Animação de chegada em curso. Null = já está na cena normalmente. */
+  private chegada: Chegada | null = null
+
   constructor(login: string, nome?: string, skin?: Skin) {
     this.login = login
     this.nome = nome ?? login
@@ -51,6 +55,11 @@ export class Avatar {
     this.skin = skin
   }
 
+  /** Começa a animação de chegada (avatar novo na live). */
+  chegar(tipo?: TipoDeChegada): void {
+    this.chegada = new Chegada(this.x, tipo)
+  }
+
   falar(texto: string): void {
     this.balao = desenharBalao(texto)
     this.tempoDeBalao = config.balao.duracao
@@ -70,6 +79,16 @@ export class Avatar {
   atualizar(delta: number): void {
     const s = delta / 1000
     const m = config.movimento
+
+    // chegando: a animação manda; o balão espera para contar depois
+    if (this.chegada) {
+      this.chegada.atualizar(s)
+      if (this.chegada.acabou) {
+        this.chegada = null
+        this.decidir()
+      }
+      return
+    }
 
     this.tempoNoEstado += s
     if (this.tempoNoEstado >= this.duracaoDoEstado) this.decidir()
@@ -100,24 +119,32 @@ export class Avatar {
     }
   }
 
-  desenhar(ctx: CanvasRenderingContext2D): void {
+  /** Sprite e nome com o pé em (x, base). */
+  private desenharCorpo(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    base: number,
+    andando: boolean,
+    direcao: Direcao,
+    quadro: number,
+  ): void {
     const tamanho = config.avatar
-    const esquerda = Math.round(this.x - tamanho / 2)
-    const topo = Math.round(this.baseY - tamanho)
+    const esquerda = Math.round(x - tamanho / 2)
+    const topo = Math.round(base - tamanho)
 
     const sprite = spriteDaSkin(
       this.skin,
-      this.andando ? 'lado' : 'frente',
+      andando ? 'lado' : 'frente',
       config.escala,
-      this.andando ? this.quadro : -1,
-      this.balao !== null,
+      andando ? quadro : -1,
+      this.balao !== null && !this.chegada,
     )
     // o sprite tem folga em volta do desenho, para a caminhada não cortar nada
     const folga = Math.round(MARGEM * config.escala)
 
     // andando para a esquerda, o mesmo sprite é espelhado na hora. Guardar os
     // dois lados no cache dobraria o numero de canvas por avatar.
-    if (this.andando && this.direcao === 'esquerda') {
+    if (andando && direcao === 'esquerda') {
       ctx.save()
       ctx.translate(esquerda + tamanho, topo)
       ctx.scale(-1, 1)
@@ -128,14 +155,46 @@ export class Avatar {
     }
 
     if (config.mostrarNomes) {
-      ctx.drawImage(
-        this.rotulo,
-        Math.round(this.x - this.rotulo.width / 2),
-        Math.round(this.baseY - 2),
-      )
+      ctx.drawImage(this.rotulo, Math.round(x - this.rotulo.width / 2), Math.round(base - 2))
+    }
+  }
+
+  private desenharChegando(ctx: CanvasRenderingContext2D, chegada: Chegada): void {
+    const tamanho = config.avatar
+    const base = this.baseY
+    const pose = chegada.pose(base, tamanho)
+
+    chegada.desenharAtras(ctx, this.x, base, tamanho)
+
+    ctx.save()
+    ctx.globalAlpha = pose.alpha
+    if (pose.recorte) {
+      // o portal esconde o avatar enquanto ele ainda está "do lado de lá"
+      const linha = this.x + pose.recorte.x
+      const largura = config.tela.largura
+      ctx.beginPath()
+      if (pose.recorte.lado === 1) ctx.rect(linha, 0, largura - linha, config.tela.altura)
+      else ctx.rect(0, 0, linha, config.tela.altura)
+      ctx.clip()
+    }
+    if (pose.alpha > 0) {
+      this.desenharCorpo(ctx, this.x + pose.dx, base + pose.dy, pose.andando, pose.direcao, pose.quadro)
+    }
+    ctx.restore()
+
+    chegada.desenharFrente(ctx, this.x, base, tamanho)
+  }
+
+  desenhar(ctx: CanvasRenderingContext2D): void {
+    if (this.chegada) {
+      this.desenharChegando(ctx, this.chegada)
+      return
     }
 
+    this.desenharCorpo(ctx, this.x, this.baseY, this.andando, this.direcao, this.quadro)
+
     if (this.balao) {
+      const topo = Math.round(this.baseY - config.avatar)
       ctx.drawImage(
         this.balao,
         Math.round(this.x - this.balao.width / 2),
