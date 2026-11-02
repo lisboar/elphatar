@@ -110,7 +110,7 @@ Cada etapa termina com o "ok" do Thainã.
 
 ## Onde estamos (atualizado em 31/10/2026)
 
-**Etapas 0 a 3 concluídas.** Próxima: Etapa 4 (Supabase).
+**Etapas 0 a 3 concluídas.** Etapa 4 (Supabase) em teste.
 A Etapa 3 foi aprovada testando no navegador com o chat real; o teste no OBS
 fica para quando der (o mais tardar, na Etapa 7).
 
@@ -213,6 +213,28 @@ espelhado na hora do `drawImage`.
 - URL: `?canal=outro` lê outro canal (teste). Com `?teste=1` o chat real fica
   desligado e a sessão não é salva; `?chat=1` liga junto com o painel.
 - Pendente: o zumbi 2 no editor, que fica para depois.
+
+### Etapa 4: Supabase (01/11/2026)
+- Projeto `elphatar` (São Paulo, grátis) numa conta separada (`thz_play`),
+  porque a conta principal já tinha 2 projetos.
+- URL e chave pública ficam em `config.ts` (são públicas; o build do Pages não
+  lê o `.env`). Segredos só em Edge Functions → Secrets:
+  `TWITCH_CLIENT_SECRET` e `CHAVE_OVERLAY`.
+- **Painel de controle** (`controle.html`), pedido no meio da etapa: login com
+  a Twitch; só quem está na tabela `equipe` (por ID da Twitch) salva.
+  Os campos estão em `src/config/ajustes.ts`. O overlay confere a cada 15 s
+  (sem Realtime) e guarda o último ajuste localmente. Prévia ao vivo no iframe.
+- **Skins** pelo ID da Twitch (não muda com o login). Leitura pública pela REST;
+  gravação só pela função `skin`, com a chave do overlay (`?chave=` no OBS).
+- **Seguidor**: função `seguidor`, com cache (segue: 7 dias; não segue: 10 min).
+  O token vem do login da Renata no painel (escopo `moderator:read:followers`).
+  Só o token dela é aceito: para quem não é dono nem mod a Twitch responde
+  "não segue" sem dar erro.
+- Overlay: limite de 60 pedidos/min ao Supabase; fora do ar, segue sem skins
+  salvas.
+- Código das funções em `supabase/functions/`. O deploy foi feito pelo MCP.
+- **Etapa 5:** a lista de comandos no chat (`!comandos`) precisa de uma conta
+  que escreve no chat (bot ou a da Renata), autorizada pelo mesmo app.
 
 ## Fase 2 (não começar antes da Fase 1 terminar)
 - Advanced Scene Switcher detectando, em recortes pequenos da tela:

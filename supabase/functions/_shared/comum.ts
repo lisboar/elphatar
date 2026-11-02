@@ -36,8 +36,13 @@ export function preflight(req: Request): Response | null {
 
 /** A chave do overlay vai na URL do OBS e só o overlay da live conhece. */
 export function chaveValida(req: Request): boolean {
-  const esperada = Deno.env.get('CHAVE_OVERLAY')
-  return !!esperada && req.headers.get('x-chave-overlay') === esperada
+  // trim: ao colar o segredo no painel do Supabase é fácil levar um espaço junto
+  const esperada = Deno.env.get('CHAVE_OVERLAY')?.trim()
+  if (!esperada) {
+    console.error('CHAVE_OVERLAY não configurada')
+    return false
+  }
+  return req.headers.get('x-chave-overlay')?.trim() === esperada
 }
 
 interface RespostaToken {
