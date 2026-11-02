@@ -63,8 +63,10 @@ export function entrarComTwitch(): void {
  * o token do bot, que o painel entrega ao Supabase.
  */
 export function conectarBot(): void {
+  // localStorage, não sessionStorage: na troca de conta na Twitch a volta pode
+  // cair noutra aba. Vale por 10 minutos.
   try {
-    sessionStorage.setItem(CONECTANDO_BOT, '1')
+    localStorage.setItem(CONECTANDO_BOT, String(Date.now() + 10 * 60 * 1000))
   } catch {
     // sem storage a volta seria tratada como login normal; segue mesmo assim
   }
@@ -85,8 +87,8 @@ async function lerVoltaDoLogin(): Promise<Sessao | null> {
 
   let doBot = false
   try {
-    doBot = sessionStorage.getItem(CONECTANDO_BOT) === '1'
-    sessionStorage.removeItem(CONECTANDO_BOT)
+    doBot = Number(localStorage.getItem(CONECTANDO_BOT) ?? 0) > Date.now()
+    localStorage.removeItem(CONECTANDO_BOT)
   } catch {
     // sem storage: trata como login normal
   }
