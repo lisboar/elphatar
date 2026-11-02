@@ -104,6 +104,13 @@ export const config = {
     chavePublica: 'sb_publishable_nND5Jj2o-Wpbs6Rt_OMvMA_Xxj-hbwi',
   },
 
+  /** App no Twitch Developer Console. O Client ID é público; o secret fica só no Supabase. */
+  twitch: {
+    clientId: 'rlywmuqxfq1z3uxw75ioo3eb3qtqou',
+    /** Pedidos no login do painel. Seguidores: vale para a dona do canal e mods. */
+    escopos: ['moderator:read:followers'],
+  },
+
   /** De quanto em quanto tempo o overlay confere os ajustes do painel, em segundos. */
   conferirAjustesACada: 15,
 

@@ -80,20 +80,13 @@
         display: grid;
         gap: 12px;
       }
-      .entrar label {
-        display: grid;
-        gap: 4px;
-        font-size: 13px;
+      button.twitch {
+        border-color: #9146ff;
+        background: #9146ff;
+        color: #fff;
       }
-      .entrar input {
-        padding: 9px 11px;
-        border: 1px solid var(--borda);
-        border-radius: 8px;
-        background: var(--painel);
-      }
-      .entrar input:focus {
-        outline: none;
-        border-color: var(--rosa);
+      button.twitch:hover:not(:disabled) {
+        color: #fff;
       }
       .mensagem {
         min-height: 1.5em;
@@ -229,13 +222,12 @@
     </style>
   </head>
   <body>
-    <form class="entrar" id="entrar" hidden>
+    <div class="entrar" id="entrar" hidden>
       <h1>Painel do overlay</h1>
-      <label>E-mail <input type="email" name="email" autocomplete="username" required /></label>
-      <label>Senha <input type="password" name="senha" autocomplete="current-password" required /></label>
-      <button class="principal" type="submit">Entrar</button>
+      <p class="mensagem">Só a equipe do canal consegue salvar.</p>
+      <button class="principal twitch" id="botao-twitch">Entrar com a Twitch</button>
       <div class="mensagem" id="mensagem-entrar"></div>
-    </form>
+    </div>
 
     <main id="painel" hidden>
       <div class="topo">

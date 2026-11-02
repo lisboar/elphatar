@@ -1,6 +1,6 @@
 import { config } from '../config/config'
 import { aplicarAjustes, campos, padroes, type Ajustes, type Campo } from '../config/ajustes'
-import { entrar, sair, sessaoAtual, type Sessao } from './conta'
+import { entrarComTwitch, sair, sessaoAtual, type Sessao } from './conta'
 
 /**
  * Painel de controle: a equipe (Thainã e Renata) muda os ajustes do overlay
@@ -10,7 +10,7 @@ import { entrar, sair, sessaoAtual, type Sessao } from './conta'
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 
-const formEntrar = $<HTMLFormElement>('entrar')
+const telaDeEntrar = $('entrar')
 const painel = $('painel')
 const listaDeCampos = $('campos')
 const botaoSalvar = $<HTMLButtonElement>('salvar')
@@ -198,9 +198,9 @@ async function salvar(): Promise<void> {
 // ---------- início ----------
 
 async function abrirPainel(sessao: Sessao): Promise<void> {
-  formEntrar.hidden = true
+  telaDeEntrar.hidden = true
   painel.hidden = false
-  $('quem').textContent = sessao.user.email ?? ''
+  $('quem').textContent = sessao.user.nome
 
   const resposta = await api('/rest/v1/rpc/e_da_equipe', { method: 'POST', body: '{}' })
   const daEquipe = resposta.ok && (await resposta.json()) === true
@@ -213,23 +213,11 @@ async function abrirPainel(sessao: Sessao): Promise<void> {
     avisar(mensagem, erro instanceof Error ? erro.message : String(erro), true)
   }
   if (!daEquipe) {
-    avisar(mensagem, 'Esta conta entrou, mas não está na equipe: dá para ver, não para salvar.', true)
+    avisar(mensagem, 'Esta conta da Twitch ainda não está na equipe: dá para ver, não para salvar.', true)
   }
 }
 
-formEntrar.addEventListener('submit', async (evento) => {
-  evento.preventDefault()
-  const dados = new FormData(formEntrar)
-  const aviso = $('mensagem-entrar')
-  avisar(aviso, 'Entrando…')
-  try {
-    const sessao = await entrar(String(dados.get('email')), String(dados.get('senha')))
-    avisar(aviso, '')
-    await abrirPainel(sessao)
-  } catch (erro) {
-    avisar(aviso, erro instanceof Error ? erro.message : String(erro), true)
-  }
-})
+$('botao-twitch').addEventListener('click', entrarComTwitch)
 
 $('sair').addEventListener('click', (evento) => {
   evento.preventDefault()
@@ -245,6 +233,11 @@ window.addEventListener('beforeunload', (evento) => {
   if (!botaoSalvar.disabled) evento.preventDefault()
 })
 
-const sessao = await sessaoAtual()
-if (sessao) await abrirPainel(sessao)
-else formEntrar.hidden = false
+try {
+  const sessao = await sessaoAtual()
+  if (sessao) await abrirPainel(sessao)
+  else telaDeEntrar.hidden = false
+} catch (erro) {
+  telaDeEntrar.hidden = false
+  avisar($('mensagem-entrar'), erro instanceof Error ? erro.message : String(erro), true)
+}
