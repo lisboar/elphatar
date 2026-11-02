@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel de Controle</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --rosa: #ff4fb0;
+        --rosa-claro: #ffd6ef;
+        --escuro: #140a12;
+        --painel: #1f1320;
+        --borda: #3a2238;
+        --erro: #ff8f8f;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 20px 16px 40px;
+        background: var(--escuro);
+        color: var(--rosa-claro);
+        font: 14px/1.5 system-ui, -apple-system, sans-serif;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        color: var(--rosa);
+      }
+      h2 {
+        margin: 0 0 10px;
+        font-size: 12px;
+        color: var(--rosa);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      a {
+        color: var(--rosa);
+      }
+      button,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        padding: 8px 14px;
+        border: 1px solid var(--borda);
+        border-radius: 8px;
+        background: #2a1a2b;
+        cursor: pointer;
+      }
+      button:hover:not(:disabled) {
+        border-color: var(--rosa);
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      button.principal {
+        border-color: var(--rosa);
+        background: var(--rosa);
+        color: var(--escuro);
+        font-weight: 600;
+      }
+      button.principal:hover:not(:disabled) {
+        color: var(--escuro);
+        filter: brightness(1.1);
+      }
+
+      /* login */
+      .entrar {
+        max-width: 340px;
+        margin: 10vh auto 0;
+        display: grid;
+        gap: 12px;
+      }
+      .entrar label {
+        display: grid;
+        gap: 4px;
+        font-size: 13px;
+      }
+      .entrar input {
+        padding: 9px 11px;
+        border: 1px solid var(--borda);
+        border-radius: 8px;
+        background: var(--painel);
+      }
+      .entrar input:focus {
+        outline: none;
+        border-color: var(--rosa);
+      }
+      .mensagem {
+        min-height: 1.5em;
+        font-size: 13px;
+        opacity: 0.8;
+      }
+      .mensagem.erro {
+        color: var(--erro);
+        opacity: 1;
+      }
+
+      /* painel */
+      .topo {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1200px;
+        margin: 0 auto 16px;
+      }
+      .quem {
+        font-size: 13px;
+        opacity: 0.7;
+      }
+      .grade {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
+        gap: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+        align-items: start;
+      }
+      @media (max-width: 860px) {
+        .grade {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .previa {
+        position: sticky;
+        top: 16px;
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        border: 1px solid var(--borda);
+        border-radius: 10px;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        /* um fundo de "jogo" para ver o overlay como na live */
+        background: linear-gradient(160deg, #2b3a55 0%, #4d3b5c 55%, #1a1420 100%);
+      }
+      @media (max-width: 860px) {
+        .previa {
+          position: static;
+          grid-row: auto;
+        }
+      }
+      .previa iframe {
+        width: 1920px;
+        height: 1080px;
+        border: 0;
+        transform-origin: 0 0;
+        background: transparent;
+      }
+      .campos {
+        display: grid;
+        gap: 14px;
+      }
+      fieldset {
+        margin: 0;
+        padding: 14px;
+        border: 1px solid var(--borda);
+        border-radius: 10px;
+        background: var(--painel);
+        display: grid;
+        gap: 14px;
+      }
+      legend {
+        padding: 0 6px;
+        color: var(--rosa);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .campo {
+        display: grid;
+        gap: 4px;
+      }
+      .campo .linha {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+      }
+      .campo output {
+        font-family: ui-monospace, monospace;
+        color: #fff;
+      }
+      .campo .ajuda {
+        font-size: 12px;
+        opacity: 0.55;
+      }
+      .campo input[type='range'] {
+        width: 100%;
+        accent-color: var(--rosa);
+      }
+      .campo.sim-nao,
+      .campo.cor {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+      .campo input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--rosa);
+      }
+      .campo input[type='color'] {
+        width: 44px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid var(--borda);
+        border-radius: 6px;
+        background: none;
+      }
+      .acoes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .acoes .mensagem {
+        flex-basis: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <form class="entrar" id="entrar" hidden>
+      <h1>Painel do overlay</h1>
+      <label>E-mail <input type="email" name="email" autocomplete="username" required /></label>
+      <label>Senha <input type="password" name="senha" autocomplete="current-password" required /></label>
+      <button class="principal" type="submit">Entrar</button>
+      <div class="mensagem" id="mensagem-entrar"></div>
+    </form>
+
+    <main id="painel" hidden>
+      <div class="topo">
+        <h1>Painel do overlay</h1>
+        <div class="quem"><span id="quem"></span> · <a href="#" id="sair">sair</a></div>
+      </div>
+      <div class="grade">
+        <div class="previa" id="previa"></div>
+        <div class="campos">
+          <div id="campos" class="campos"></div>
+          <div class="acoes">
+            <button class="principal" id="salvar" disabled>Salvar</button>
+            <button id="desfazer" disabled>Desfazer</button>
+            <button id="padrao">Voltar ao padrão</button>
+            <div class="mensagem" id="mensagem"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/controle/main.ts"></script>
+  </body>
+</html>

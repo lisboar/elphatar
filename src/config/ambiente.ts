@@ -8,8 +8,8 @@ export const ambiente = {
   /** Chave do overlay usada para chamar as Edge Functions (Etapa 4). Só pela URL. */
   chaveOverlay: query.get('chave') ?? '',
 
-  /** URL do projeto Supabase (Etapa 4). */
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? '',
+  /** Prévia dentro do painel de controle: recebe os ajustes por mensagem, não do banco. */
+  previa: query.get('previa') === '1',
 
   /** Mostra diagnóstico na tela: ?debug=1 */
   debug: query.get('debug') === '1',

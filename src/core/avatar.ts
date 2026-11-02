@@ -58,9 +58,9 @@ export class Avatar {
     if (this.andando && Math.random() < 0.5) {
       this.direcao = this.direcao === 'direita' ? 'esquerda' : 'direita'
     }
+    const faixa = this.andando ? m.andando : m.parado
     this.tempoNoEstado = 0
-    this.duracaoDoEstado =
-      m.minimoNoEstado + Math.random() * (m.maximoNoEstado - m.minimoNoEstado)
+    this.duracaoDoEstado = faixa.minimo + Math.random() * Math.max(0, faixa.maximo - faixa.minimo)
   }
 
   atualizar(delta: number): void {
@@ -123,11 +123,13 @@ export class Avatar {
       ctx.drawImage(sprite, esquerda - folga, topo - folga)
     }
 
-    ctx.drawImage(
-      this.rotulo,
-      Math.round(this.x - this.rotulo.width / 2),
-      Math.round(this.baseY - 2),
-    )
+    if (config.mostrarNomes) {
+      ctx.drawImage(
+        this.rotulo,
+        Math.round(this.x - this.rotulo.width / 2),
+        Math.round(this.baseY - 2),
+      )
+    }
 
     if (this.balao) {
       ctx.drawImage(

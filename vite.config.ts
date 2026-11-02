@@ -73,6 +73,8 @@ export default defineConfig({
         overlay: 'index.html',
         // laboratorio = página de desenvolvimento das partes (Etapa 1)
         laboratorio: 'laboratorio.html',
+        // controle = painel da equipe para ajustar o overlay com a live no ar
+        controle: 'controle.html',
         // o editor (editor.html) fica fora do build: ele só salva no dev
       },
     },

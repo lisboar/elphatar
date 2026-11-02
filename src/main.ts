@@ -1,6 +1,7 @@
 import { ambiente } from './config/ambiente'
 import { config } from './config/config'
 import { manterSessao } from './core/sessao'
+import { acompanharAjustes, ouvirPrevia } from './core/sincronia'
 import { ChatTwitch } from './chat/twitch'
 import type { FonteDeChat } from './chat/fonte'
 import { criarPalco, iniciarLaco } from './core/palco'
@@ -50,9 +51,14 @@ iniciarLaco((delta) => {
 
 const modoTeste = ambiente.teste || ambiente.falsos > 0
 
+if (ambiente.previa) ouvirPrevia()
+else acompanharAjustes()
+
 if (modoTeste) {
   const { montarPainel } = await import('./core/painel')
   montarPainel(cena, () => fps, ambiente.falsos, () => custo)
+  // na prévia do painel de controle os botões de teste ficam escondidos
+  if (ambiente.previa) document.body.classList.add('previa')
 }
 
 // No teste o chat real só liga com ?chat=1, e a sessão não é salva, para os

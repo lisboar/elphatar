@@ -6,15 +6,23 @@ const ESCALA_AVATAR = 2
 /**
  * Configuração do overlay.
  * Tudo que é personalizável mora aqui, nunca espalhado no código.
+ *
+ * Estes são os valores padrão. O que o painel ajusta (ver `ajustes.ts`) é
+ * gravado por cima destes campos enquanto o overlay roda.
  */
 export const config = {
   /** Resolução lógica do canvas. O OBS usa a mesma. */
   tela: { largura: 1920, altura: 1080 },
 
-  escala: ESCALA_AVATAR,
+  escala: ESCALA_AVATAR as number,
 
   /** Tamanho do avatar desenhado na tela, em pixels (48 x 2 = 96). */
-  avatar: GRADE * ESCALA_AVATAR,
+  get avatar(): number {
+    return GRADE * this.escala
+  },
+
+  /** Mostra o nome embaixo do avatar. */
+  mostrarNomes: true,
 
   /** Faixa de baixo onde os avatares andam. */
   faixa: {
@@ -31,9 +39,10 @@ export const config = {
   movimento: {
     /** Pixels por segundo. */
     velocidade: 46,
-    /** Quanto tempo, em segundos, ele fica parado ou andando antes de decidir de novo. */
-    minimoNoEstado: 1.6,
-    maximoNoEstado: 5,
+    /** Quanto tempo, em segundos, ele fica parado antes de decidir de novo. */
+    parado: { minimo: 1.6, maximo: 5 },
+    /** Quanto tempo, em segundos, ele anda antes de decidir de novo. */
+    andando: { minimo: 1.6, maximo: 5 },
     /** Chance de escolher "andar" quando decide. */
     chanceDeAndar: 0.55,
     /** Segundos por quadro da caminhada. */
@@ -85,10 +94,23 @@ export const config = {
   /** Comando de mod que tira todo mundo da tela (regra 5). */
   comandoLimpar: '!limpar',
 
+  /**
+   * Projeto Supabase. Os dois valores são públicos por natureza: vão no JS de
+   * qualquer jeito, e quem protege os dados são as regras (RLS) do banco.
+   * Segredo de verdade (token da Twitch, service key) fica só no Supabase.
+   */
+  supabase: {
+    url: 'https://hwpgphfrjeovndusvazg.supabase.co',
+    chavePublica: 'sb_publishable_nND5Jj2o-Wpbs6Rt_OMvMA_Xxj-hbwi',
+  },
+
+  /** De quanto em quanto tempo o overlay confere os ajustes do painel, em segundos. */
+  conferirAjustesACada: 15,
+
   /** Identidade visual: rosa / neon escuro. */
   cores: {
     rosa: '#ff4fb0',
     rosaClaro: '#ffd6ef',
     escuro: '#140a12',
   },
-} as const
+}
